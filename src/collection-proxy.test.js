@@ -11,7 +11,7 @@ class IntermediateA extends Collection {
         this._underlying = underlying;
     }
 }
-mixin(IntermediateA.prototype, ProxyMixin.prototype);
+mixin(IntermediateA.prototype, ProxyMixin);
 
 class IntermediateB extends Collection {
     constructor(underlying) {
@@ -19,7 +19,7 @@ class IntermediateB extends Collection {
         this._underlying = underlying;
     }
 }
-mixin(IntermediateB.prototype, ProxyMixin.prototype);
+mixin(IntermediateB.prototype, ProxyMixin);
 
 describe('ProxyMixin', function() {
     it('unwraps multiple levels of collection proxies', function() {
