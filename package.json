@@ -29,6 +29,7 @@
     "proxy"
   ],
   "dependencies": {
+    "@uu-cdh/backbone-util": "github:CentreForDigitalHumanities/backbone-util#release/0.1.0",
     "backbone": "^1.6.0",
     "underscore": "^1.13.6"
   },
