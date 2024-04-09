@@ -1,34 +1,34 @@
-import mixin from '../core/mixin';
-import Model from '../core/model';
-import Collection from '../core/collection';
-import ProxyMixin from './collection-proxy';
+import assert from 'assert';
 
-interface IntermediateA extends ProxyMixin<Model, Collection> {}
+import { Model, Collection } from 'backbone';
+import { mixin } from '@uu-cdh/backbone-util';
+
+import ProxyMixin from './collection-proxy.js';
+
 class IntermediateA extends Collection {
-    constructor(underlying: Collection) {
+    constructor(underlying) {
         super();
         this._underlying = underlying;
     }
 }
 mixin(IntermediateA.prototype, ProxyMixin.prototype);
 
-interface IntermediateB<C extends Collection> extends ProxyMixin<Model, C> {}
-class IntermediateB<C extends Collection> extends Collection {
-    constructor(underlying: C) {
+class IntermediateB extends Collection {
+    constructor(underlying) {
         super();
         this._underlying = underlying;
     }
 }
 mixin(IntermediateB.prototype, ProxyMixin.prototype);
 
-describe('CollectionProxyMixin', function() {
-    it('unwraps multiple levels of collection proxies when applicable', function() {
-        const bottom = new Collection();
-        const middle = new IntermediateA(bottom);
-        const top = new IntermediateB<IntermediateA>(middle);
-        expect(middle._underlying).toBe(bottom);
-        expect(middle.underlying).toBe(bottom);
-        expect(top._underlying).toBe(middle);
-        expect(top.underlying).toBe(bottom);
+describe('ProxyMixin', function() {
+    it('unwraps multiple levels of collection proxies', function() {
+        var bottom = new Collection();
+        var middle = new IntermediateA(bottom);
+        var top = new IntermediateB(middle);
+        assert(middle._underlying === bottom);
+        assert(middle.underlying === bottom);
+        assert(top._underlying === middle);
+        assert(top.underlying === bottom);
     });
 });
