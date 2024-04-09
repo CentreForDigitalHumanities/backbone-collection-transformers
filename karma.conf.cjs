@@ -34,12 +34,12 @@ module.exports = function(config) {
                 'underscore'
             ],
             plugins: [
-                require('rollup-plugin-node-polyfills')(),
                 require('rollup-plugin-glob-import')({
                     format: 'import',
                 }),
                 require('@rollup/plugin-json')(),
                 require('@rollup/plugin-commonjs')(),
+                require('rollup-plugin-node-polyfills')(),
                 require('@rollup/plugin-node-resolve').default(),
                 require('@rollup/plugin-babel').default({
                     presets: ['power-assert'],
