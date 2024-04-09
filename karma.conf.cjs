@@ -39,8 +39,8 @@ module.exports = function(config) {
                     format: 'import',
                 }),
                 require('@rollup/plugin-json')(),
-                require('@rollup/plugin-node-resolve').default(),
                 require('@rollup/plugin-commonjs')(),
+                require('@rollup/plugin-node-resolve').default(),
                 require('@rollup/plugin-babel').default({
                     presets: ['power-assert'],
                     babelHelpers: 'bundled',
