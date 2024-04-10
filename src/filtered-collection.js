@@ -33,7 +33,7 @@ var FilteredCollectionMixin = {
         return instance;
     },
 
-    preinitialize(models[], {underlying, criterion}) {
+    preinitialize(models, {underlying, criterion}) {
         var matches;
         if (isFunction(criterion)) {
             matches = criterion;
