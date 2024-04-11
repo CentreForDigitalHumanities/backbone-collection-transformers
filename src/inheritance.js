@@ -43,7 +43,7 @@ export function deriveConstructor(Base, prepare, initialize) {
      */
     function Derived(...args) {
         var parentArgs = prepare(...args);
-        var target = (new.target || this && this.constructor || Derived);
+        var target = new.target || this && this.constructor || Derived;
         var instance = Reflect.construct(Base, parentArgs, target);
         var result = initialize.call(instance, args, parentArgs);
         return result || instance;
