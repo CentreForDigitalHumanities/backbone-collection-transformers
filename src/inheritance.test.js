@@ -68,11 +68,11 @@ function describeWithBase(Base) {
 
     function assertMiddleInstance(instance) {
         assert(instance instanceof Middle);
-        sinon.assert.matches(instance, collectionOpts);
+        sinon.assert.match(instance, collectionOpts);
         assert(instance.length === modelInit.length);
         assertOwn(instance, 'basePreinitProp', 'basePreinitProp');
         assertOwn(instance, 'baseInitProp', 'baseInitProp');
-        assertInherited(instance, 'baseProtoprop', 'baseProtoprop');
+        assertInherited(instance, 'baseProtoProp', 'baseProtoProp');
         assertOwn(instance, 'middleCtorProp', 'middleCtorProp');
         assertInherited(instance, 'middleProtoProp', 'middleProtoProp');
     }
