@@ -111,9 +111,9 @@ function describeWithBase(Base) {
             function assertDerivedInstance(instance) {
                 assertMiddleInstance(instance);
                 assert(instance instanceof Derived);
-                assertOwn(instance, 'derivedPreinitProp');
-                assertOwn(instance, 'derivedInitProp');
-                assertInherited(instance, 'derivedProtoProp');
+                assertOwn(instance, 'derivedPreinitProp', 'derivedPreinitProp');
+                assertOwn(instance, 'derivedInitProp', 'derivedInitProp');
+                assertInherited(instance, 'derivedProtoProp', 'derivedProtoProp');
             }
 
             it('extends the prototype chain', function() {
