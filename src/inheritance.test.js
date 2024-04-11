@@ -21,25 +21,27 @@ var OldBase = Collection.extend(baseProtoProps);
 class NewBase extends Collection {}
 _.extend(NewBase.prototype, baseProtoProps);
 
-var derivedProtoProps = {
-    preinitialize(models, options) {
-        super.preinitialize(models, options);
-        this.derivedPreinitProp = 'derivedPreinitProp';
-    },
-    initialize(models, options) {
-        super.initialize(models, options);
-        this.derivedInitProp = 'derivedInitProp';
-    },
-    derivedProtoProp: 'derivedProtoProp'
-};
+function derivedProtoProps(Base) {
+    return {
+        preinitialize(models, options) {
+            Base.prototype.preinitialize.call(this, models, options);
+            this.derivedPreinitProp = 'derivedPreinitProp';
+        },
+        initialize(models, options) {
+            Base.prototype.initialize.call(this, models, options);
+            this.derivedInitProp = 'derivedInitProp';
+        },
+        derivedProtoProp: 'derivedProtoProp'
+    };
+}
 
 function deriveOld(Base) {
-    return Base.extend(derivedProtoProps);
+    return Base.extend(derivedProtoProps(Base));
 }
 
 function deriveNew(Base) {
     class Derived extends Base {}
-    _.extend(Derived.prototype, derivedProtoProps);
+    _.extend(Derived.prototype, derivedProtoProps(Base));
     return Derived;
 }
 
