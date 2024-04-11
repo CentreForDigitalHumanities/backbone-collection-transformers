@@ -1,60 +1,129 @@
 import assert from 'assert';
+import sinon from 'sinon';
 
 import _ from 'underscore';
 import { Collection } from 'backbone';
 
 import { deriveConstructor } from './inheritance.js';
 
-var OldBase = Collection.extend({
+var baseProtoProps = {
     preinitialize: function(models, options) {
-        this.oldPreinitProp = 'oldPreinitProp';
+        this.basePreinitProp = 'basePreinitProp';
     },
     initialize: function(models, options) {
-        this.oldInitProp = 'oldInitProp';
-    }
-});
+        this.baseInitProp = 'baseInitProp';
+    },
+    baseProtoProp: 'baseProtoProp'
+};
 
-class NewBase extends Collection {
+var OldBase = Collection.extend(baseProtoProps);
+
+class NewBase extends Collection {}
+_.extend(NewBase.prototype, baseProtoProps);
+
+var derivedProtoProps = {
     preinitialize(models, options) {
-        this.newPreinitProp = 'newPreinitProp';
-    }
+        super.preinitialize(models, options);
+        this.derivedPreinitProp = 'derivedPreinitProp';
+    },
     initialize(models, options) {
-        this.newInitProp = 'newInitProp';
-    }
-}
+        super.initialize(models, options);
+        this.derivedInitProp = 'derivedInitProp';
+    },
+    derivedProtoProp: 'derivedProtoProp'
+};
 
 function deriveOld(Base) {
-    return Base.extend({
-        preinitialize(models, options) {
-            super.preinitialize(models, options);
-            this.oldDerivedPreinit = 'oldDerivedP';
-        },
-        initialize(models, options) {
-            super.initialize(models, options);
-            this.oldDerivedInit = 'oldDerivedInit';
-        },
-        oldProtoProp: 'oldProtoProp'
-    });
+    return Base.extend(derivedProtoProps);
 }
 
 function deriveNew(Base) {
     class Derived extends Base {}
-    _.extend(Derived.prototype, {
-        preinitialize(models, options) {
-            super.preinitialize(models, options);
-            this.newDerivedPreinit = 'newDerivedP';
-        },
-        initialize(models, options) {
-            super.initialize(models, options);
-            this.newDerivedInit = 'newDerivedInit';
-        },
-        newProtoProp: 'newProtoProp'
-    });
+    _.extend(Derived.prototype, derivedProtoProps);
     return Derived;
 }
 
+function assertOwn(object, key, value) {
+    assert(object.hasOwnProperty(key));
+    assert(object[key] === value);
+}
+
+function assertInherited(object, key, value) {
+    assert(!object.hasOwnProperty(key));
+    assert(object[key] === value);
+}
+
 function describeWithBase(Base) {
-    ;
+    var Middle = Base.extend({
+        constructor: deriveConstructor(Base, function(models, options) {
+            return [models, options];
+        }, function() {
+            this.middleCtorProp = 'middleCtorProp';
+        }),
+        middleProtoProp: 'middleProtoProp'
+    });
+
+    var modelInit = [{}, {}];
+    var collectionOpts = {comparator: 'id'};
+
+    function assertMiddleInstance(instance) {
+        assert(instance instanceof Middle);
+        sinon.assert.matches(instance, collectionOpts);
+        assert(instance.length === modelInit.length);
+        assertOwn(instance, 'basePreinitProp', 'basePreinitProp');
+        assertOwn(instance, 'baseInitProp', 'baseInitProp');
+        assertInherited(instance, 'baseProtoprop', 'baseProtoprop');
+        assertOwn(instance, 'middleCtorProp', 'middleCtorProp');
+        assertInherited(instance, 'middleProtoProp', 'middleProtoProp');
+    }
+
+    it('returns a function', function() {
+        assert(_.isFunction(Middle));
+    });
+
+    describe('the function', function() {
+        it('has a correct prototype chain', function() {
+            assert(Middle.prototype instanceof Base);
+            assert(Base.prototype instanceof Collection);
+        });
+
+        it('works with new', function() {
+            var instance = new Middle(modelInit, collectionOpts);
+            assertMiddleInstance(instance);
+        });
+
+        it('works without new', function() {
+            var instance = Middle.call(
+                Object.create(Middle.prototype),
+                modelInit,
+                collectionOpts
+            );
+            assertMiddleInstance(instance);
+        });
+    });
+
+    _.each({old: deriveOld, 'new': deriveNew}, function(derive, age) {
+        describe('derived in the ' + age + ' way', function() {
+            var Derived = derive(Middle);
+
+            function assertDerivedInstance(instance) {
+                assertMiddleInstance(instance);
+                assert(instance instanceof Derived);
+                assertOwn(instance, 'derivedPreinitProp');
+                assertOwn(instance, 'derivedInitProp');
+                assertInherited(instance, 'derivedProtoProp');
+            }
+
+            it('extends the prototype chain', function() {
+                assert(Derived.prototype instanceof Middle);
+            });
+
+            it('produces a valid constructor again', function() {
+                var instance = new Derived(modelInit, collectionOpts);
+                assertDerivedInstance(instance);
+            });
+        });
+    })
 }
 
 describe('deriveConstructor', function() {
