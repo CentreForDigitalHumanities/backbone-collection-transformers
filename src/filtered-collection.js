@@ -8,28 +8,40 @@ import {
 import { Model, Collection } from 'backbone';
 import mixin from '@uu-cdh/backbone-util';
 
+import { deriveConstructor } from './inheritance.js';
 import ProxyMixin from './collection-proxy.js';
+
+// The part of the constructor that runs before `super`.
+function ctorStart(underlying, criterion, options) {
+    var comparator = underlying.comparator;
+    options = defaults({}, options, {
+        underlying,
+        criterion,
+        model: underlying.model,
+    }, comparator && { comparator } || {});
+    var initialModels = underlying.filter(criterion);
+    // The arguments that will be passed to `super`.
+    return [initialModels, options];
+}
+
+// The part of the constructor that runs after `super`.
+function ctorEnd(ctorArgs) {
+    var underlying = ctorArgs[0];
+    this.listenTo(underlying, {
+        add: this.proxyAdd,
+        remove: this.proxyRemove,
+        reset: this.proxyReset,
+        sort: this.proxySort,
+        change: this.proxyChange,
+    });
+}
 
 var FilteredCollectionMixin = {
     criterion: FilterCriterion<M>;
     matches: AnyFunction;
 
     constructor(underlying, criterion, options) {
-        var comparator = underlying.comparator;
-        options = defaults({}, options, {
-            underlying,
-            criterion,
-            model: underlying.model,
-        }, comparator && { comparator } || {});
-        var initialModels = underlying.filter(criterion);
         var instance = Reflect.construct(Base, [initialModels, options], new.target || FilteredCollection);
-        instance.listenTo(underlying, {
-            add: instance.proxyAdd,
-            remove: instance.proxyRemove,
-            reset: instance.proxyReset,
-            sort: instance.proxySort,
-            change: instance.proxyChange,
-        });
         return instance;
     },
 
@@ -95,5 +107,12 @@ var FilteredCollectionMixin = {
  */
 class FilteredCollection extends Collection
 mixin(FilteredCollection.prototype, ProxyMixin);
+
+function deriveFiltered(Base) {
+    Base = Base || Collection;
+    var FilteredCollection = deriveConstructor(Base, ctorStart, ctorEnd);
+    mixin(FilteredCollection.prototype, FilteredCollectionMixin, ProxyMixin);
+    return FilteredCollection;
+}
 
 export default FilteredCollection;
