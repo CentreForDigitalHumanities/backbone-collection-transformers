@@ -1,15 +1,9 @@
-import {
-    extend,
-    defaults,
-    omit,
-    iteratee,
-    isFunction,
-} from 'underscore';
-import { Model, Collection } from 'backbone';
-import mixin from '@uu-cdh/backbone-util';
+import { extend, defaults, omit, iteratee, isFunction } from 'underscore';
+import { Collection } from 'backbone';
+import { mixin } from '@uu-cdh/backbone-util';
 
 import { deriveConstructor } from './inheritance.js';
-import ProxyMixin from './collection-proxy.js';
+import CollectionProxy from './collection-proxy.js';
 
 // The part of the constructor that runs before `super`.
 function ctorStart(underlying, criterion, options) {
@@ -36,15 +30,30 @@ function ctorEnd(ctorArgs) {
     });
 }
 
+// The instance methods and properties of a FilteredCollection.
+/** @lends deriveConstructor~FilteredCollection.prototype */
 var FilteredCollectionMixin = {
-    criterion: FilterCriterion<M>;
-    matches: AnyFunction;
+    /**
+     * Criterion to filter by. Can be anything that is supported as an iteratee
+     * by `Backbone.Collection`, such as a function, an attribute matching
+     * object, or a property name or path.
+     * @member {*} criterion
+     */
 
-    constructor(underlying, criterion, options) {
-        var instance = Reflect.construct(Base, [initialModels, options], new.target || FilteredCollection);
-        return instance;
-    },
+    /**
+     * Boolean predicate that determines whether a model should be in the
+     * filtered collection. This is a standardized version of
+     * {@link deriveConstructor~FilteredCollection#criterion}.
+     * @method matches
+     * @param {Backbone.Model} model - Model to filter.
+     * @returns {boolean} true if the the model should be included in the
+     * filtered collection, false otherwise.
+     */
 
+    /**
+     * If you subclass a filtered collection, make sure to call super in the
+     * preinitialize method.
+     */
     preinitialize(models, {underlying, criterion}) {
         var matches;
         if (isFunction(criterion)) {
@@ -57,27 +66,42 @@ var FilteredCollectionMixin = {
     },
 
     /**
-     * Forwarding methods. You are not supposed to invoke these yourself.
+     * This method is automatically invoked when a model is added to the
+     * underlying collection.
      */
-
     proxyAdd(model, collection, options) {
         if (this.matches(model)) this.add(model, omit(options, 'at'));
     },
 
+    /**
+     * This method is automatically invoked when a model is removed from the
+     * underlying collection.
+     */
     proxyRemove(model, collection, options) {
         this.remove(model, options);
     },
 
+    /**
+     * This method is automatically invoked when the underlying collection is
+     * reset.
+     */
     proxyReset(collection, options) {
         this.reset(this._underlying.filter(this.criterion), options);
     },
 
+    /**
+     * This method is automatically invoked when the underlying collection is
+     * sorted.
+     */
     proxySort(collection, options) {
         if (this.comparator) this.sort(options);
     },
 
+    /**
+     * This method is automatically invoked when a model in the underlying
+     * collection changes.
+     */
     proxyChange(model, options) {
-        // attributes changed, so we need to re-evaluate the filter criterion.
         if (this.matches(model)) {
             this.add(model, options);
         } else {
@@ -87,32 +111,44 @@ var FilteredCollectionMixin = {
 };
 
 /**
- * Synchronized filtered read-only proxy to a Backbone.Collection.
- *
- * Use this to keep a filtered subset of some other, pre-existing
- * collection (the underlying collection). The filtered proxy stays
- * in sync with the underlying collection and will emit the same
- * events when the filtered subset is affected. Do not fetch or
- * modify the proxy directly; such operations should be performed on
- * the underlying collection instead.
- *
- * Example of usage:
-
-    var myFilteredProxy = new FilteredCollection(theRawCollection, model => {
-        return model.has('@id');
-    });
-    myFilteredProxy.forEach(...);
-    myFilteredProxy.on('add', ...);
-
+ * Derived a filtered collection class from a given base class.
+ * @param {typeof Backbone.Collection} [Base=Backbone.Collection] Base collection class to derive from.
+ * @returns {typeof deriveFiltered~FilteredCollection} filtered collection
+ * class. Instances of this class will act as a filtered proxy to an instance of
+ * the Base class.
  */
-class FilteredCollection extends Collection
-mixin(FilteredCollection.prototype, ProxyMixin);
-
-function deriveFiltered(Base) {
+export default function deriveFiltered(Base) {
     Base = Base || Collection;
+    /**
+     * Synchronized filtered read-only proxy to a Backbone.Collection.
+     *
+     * Use this to keep a filtered subset of some other, pre-existing collection
+     * (the underlying collection). The filtered proxy stays in sync with the
+     * underlying collection and will emit the same events when the filtered
+     * subset is affected. Do not fetch or modify the proxy directly; such
+     * operations should be performed on the underlying collection instead.
+     *
+     * @class
+     * @mixes CollectionProxy
+     * @param {Backbone.Collection} underlying - Collection to filter.
+     * @param {*} criterion - Criterion to filter by. Can be anything that is
+     * supported as an iteratee by `Backbone.Collection`, such as a function, an
+     * attribute matching object, or a property name or path.
+     * @param {Object} options - The usual options that one may pass to the
+     * [Backbone.Collection constructor]{@link
+     * https://backbonejs.org/#Collection-constructor}.
+     * @param {string|Function} options.comparator - Specifies how to sort the
+     * filtered collection.
+     * @example
+
+        var myFilteredProxy = new FilteredCollection(theRawCollection, model => {
+            return model.has('@id');
+        });
+        myFilteredProxy.forEach(...);
+        myFilteredProxy.on('add', ...);
+
+     */
     var FilteredCollection = deriveConstructor(Base, ctorStart, ctorEnd);
-    mixin(FilteredCollection.prototype, FilteredCollectionMixin, ProxyMixin);
+    mixin(FilteredCollection.prototype, FilteredCollectionMixin, CollectionProxy);
     return FilteredCollection;
 }
-
-export default FilteredCollection;
