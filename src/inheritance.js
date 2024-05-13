@@ -48,5 +48,10 @@ export function deriveConstructor(Base, prepare, initialize) {
         var result = initialize.call(instance, args, parentArgs);
         return result || instance;
     }
+    // Create proper prorotype chain without calling Base.
+    Derived.prototype = Object.create(Base.prototype);
+    Derived.prototype.constructor = Derived;
+    // Inherit static properties.
+    Object.setPrototypeOf(Derived, Base);
     return Derived;
 }
