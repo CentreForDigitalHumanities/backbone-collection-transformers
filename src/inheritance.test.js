@@ -109,21 +109,18 @@ function assertInherited(object, key, value) {
 // `Base` and once for the new style `Base`. The lines that do the repetition
 // are at the bottom of this test module.
 function describeWithBase(Base) {
-    var Middle = Base.extend({
-        // Notice how a constructor written with `deriveConstructor` is still
-        // quite similar to any other constructor:
-        constructor: deriveConstructor(Base, function(models, options) {
-            // First, the part before the `super` call. It ends by returning the
-            // list of arguments that will be passed to `super`.
-            return [models, options];
-        }, function() {
-            // Then, the part after the `super` call, where we do things with
-            // `this` and optionally return a different object as the final
-            // result.
-            this.middleCtorProp = 'middleCtorProp';
-        }),
-        middleProtoProp: 'middleProtoProp'
-    });
+    // Notice how a constructor written with `deriveConstructor` is still quite
+    // similar to any other constructor:
+    var Middle = deriveConstructor(Base, function(models, options) {
+        // First, the part before the `super` call. It ends by returning the
+        // list of arguments that will be passed to `super`.
+        return [models, options];
+    }, function() {
+        // Then, the part after the `super` call, where we do things with `this`
+        // and optionally return a different object as the final result.
+        this.middleCtorProp = 'middleCtorProp';
+    })
+    Middle.prototype.middleProtoProp = 'middleProtoProp';
 
     // The arguments that we pass to the constructors everywhere.
     var modelInit = [{}, {}];
