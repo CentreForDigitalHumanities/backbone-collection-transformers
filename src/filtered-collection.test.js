@@ -216,4 +216,12 @@ function testFiltered(FilteredCollection, isCustom) {
 }
 
 describe('deriveFiltered', function() {
+    describe(
+        'by default derives a filtered collection class from Backbone.Collection, which',
+        _.partial(testFiltered, deriveFiltered(), false)
+    );
+    describe(
+        'may also derive a filtered collection class from a custom base, which',
+        _.partial(testFiltered, deriveFiltered(CustomCollection), true)
+    );
 });
