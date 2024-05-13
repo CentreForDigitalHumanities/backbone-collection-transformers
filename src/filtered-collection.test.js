@@ -1,4 +1,5 @@
 import assert from 'assert';
+import sinon from 'sinon';
 
 import _ from 'underscore';
 import { Model, Collection } from 'backbone';
@@ -52,11 +53,19 @@ class CustomCollection extends Collection {
 // Our test suite. We are going to run it twice: once for the default base class
 // and once for the above custom base class.
 function testFiltered(FilteredCollection, isCustom) {
-    var raw, filtered;
+    var raw, filtered, spy;
+
+    before(function() {
+        spy = sinon.fake();
+    });
 
     beforeEach(function() {
         raw = new Collection(exampleData);
         assert(raw.length === 5);
+    });
+
+    afterEach(function() {
+        spy.resetHistory();
     });
 
     if (isCustom) {
@@ -80,143 +89,122 @@ function testFiltered(FilteredCollection, isCustom) {
     });
 
     it('triggers "add" for matching models', function() {
-        var counter = 0;
         filtered = new FilteredCollection(raw, m => m.has('x'));
-        filtered.on('add', () => ++counter);
+        filtered.on('add', spy);
         raw.add(testAddition);
-        assert(counter === 1);
+        assert(spy.callCount === 1);
         assert(filtered.length === 4);
     });
 
     it('does not trigger "add" for nonmatching models', function() {
-        var counter = 0;
         filtered = new FilteredCollection(raw, m => m.has('y'));
-        filtered.on('add', () => ++counter);
+        filtered.on('add', spy);
         raw.add(testAddition);
-        assert(counter === 0);
+        assert(spy.callCount === 0);
         assert(filtered.length === 3);
     });
 
     it('triggers "remove" for matching models', function() {
-        var counter = 0;
         filtered = new FilteredCollection(raw, m => m.has('y'));
-        filtered.on('remove', () => ++counter);
+        filtered.on('remove', spy);
         raw.remove(testRemoval);
-        assert(counter === 1);
+        assert(spy.callCount === 1);
         assert(filtered.length === 2);
     });
 
     it('does not trigger "remove" for nonmatching models', function() {
-        var counter = 0;
         filtered = new FilteredCollection(raw, m => m.has('x'));
-        filtered.on('remove', () => ++counter);
+        filtered.on('remove', spy);
         raw.remove(testRemoval);
-        assert(counter === 0);
+        assert(spy.callCount === 0);
         assert(filtered.length === 3);
     });
 
     it('triggers "change" for matching models', function() {
-        var counter = 0;
         filtered = new FilteredCollection(raw, m => m.has('x'));
-        filtered.on('change', () => ++counter);
+        filtered.on('change', spy);
         raw.set(testUpdate, {merge: true, remove: false});
-        assert(counter === 1);
+        assert(spy.callCount === 1);
     });
 
     it('does not trigger "change" for nonmatching models', function() {
-        var counter = 0;
         filtered = new FilteredCollection(raw, m => m.has('z'));
-        filtered.on('change', () => ++counter);
+        filtered.on('change', spy);
         raw.set(testUpdate, {merge: true, remove: false});
-        assert(counter === 0);
+        assert(spy.callCount === 0);
     });
 
     it('triggers "change:[attr]" for matching models', function() {
-        var counter = 0;
         filtered = new FilteredCollection(raw, m => m.has('x'));
-        filtered.on('change:x', () => ++counter);
+        filtered.on('change:x', spy);
         raw.set(testUpdate, {merge: true, remove: false});
-        assert(counter === 1);
+        assert(spy.callCount === 1);
     });
 
     it('does not trigger "change:[attr]" for nonmatching models', function() {
-        var counter = 0;
         filtered = new FilteredCollection(raw, m => m.has('z'));
-        filtered.on('change:x', () => ++counter);
+        filtered.on('change:x', spy);
         raw.set(testUpdate, {merge: true, remove: false});
-        assert(counter === 0);
+        assert(spy.callCount === 0);
     });
 
     it('triggers "update" for matching models', function() {
-        var counter = 0;
         filtered = new FilteredCollection(raw, m => m.has('x'));
-        filtered.on('update', () => ++counter);
+        filtered.on('update', spy);
         raw.add(testAddition);
-        assert(counter === 1);
+        assert(spy.callCount === 1);
     });
 
     it('does not trigger "update" for nonmatching models', function() {
-        var counter = 0;
         filtered = new FilteredCollection(raw, m => m.has('y'));
-        filtered.on('update', () => ++counter);
+        filtered.on('update', spy);
         raw.add(testAddition);
-        assert(counter === 0);
+        assert(spy.callCount === 0);
     });
 
     it('adopts models when they become matching', function() {
-        var counter = 0;
         filtered = new FilteredCollection(raw, m => m.has('b'));
-        filtered.on('add', () => ++counter);
+        filtered.on('add', spy);
         raw.set(testUpdate, {merge: true, remove: false});
-        assert(counter === 1);
+        assert(spy.callCount === 1);
         assert(filtered.length === 2);
     });
 
     it('purges models when they become nonmatching', function() {
-        var counter = 0;
         filtered = new FilteredCollection(raw, m => m.get('x') === 10);
-        filtered.on('remove', () => ++counter);
+        filtered.on('remove', spy);
         raw.set(testUpdate, {merge: true, remove: false});
-        assert(counter === 1);
+        assert(spy.callCount === 1);
         assert(filtered.length === 1);
     });
 
     it('resets together with the underlying collection', function() {
-        var counter = 0;
         filtered = new FilteredCollection(raw, m => m.has('y'));
-        filtered.on('reset', () => ++counter);
+        filtered.on('reset', spy);
         raw.reset();
-        assert(counter === 1);
+        assert(spy.callCount === 1);
         assert(filtered.length === 0);
     });
 
     it('works with the attribute name iteratee shorthand', function() {
-        var counter = 0;
-        var count = () => ++counter;
         filtered = new FilteredCollection(raw, 'x');
-        filtered.on('add', count);
-        filtered.on('update', count);
-        filtered.on('remove', count);
+        filtered.on('add remove update', spy);
         raw.add(testAddition);
-        assert(counter === 2);
+        assert(spy.callCount === 2);
         assert(filtered.length === 4);
         raw.remove(exampleData[0]);
-        assert(counter === 4);
+        assert(spy.callCount === 4);
         assert(filtered.length === 3);
     });
 
     it('works with the object matcher iteratee shorthand', function() {
-        var counter = 0;
-        var count = () => ++counter;
         filtered = new FilteredCollection(raw, {x: 10});
-        filtered.on('add', count);
-        filtered.on('update', count);
-        filtered.on('remove', count);
+        filtered.on('add remove update', spy);
         raw.add(testAddition);
-        assert(counter === 2);
+        assert(spy.callCount === 2);
         assert(filtered.length === 3);
         raw.set(testUpdate, {merge: true, remove: false});
-        assert(counter === 4);
+        assert(spy.callCount === 4);
         assert(filtered.length === 2);
     });
 
