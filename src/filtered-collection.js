@@ -31,7 +31,7 @@ function ctorEnd(ctorArgs) {
 }
 
 // The instance methods and properties of a FilteredCollection.
-/** @lends deriveConstructor~FilteredCollection.prototype */
+/** @lends deriveFiltered~FilteredCollection.prototype */
 var FilteredCollectionMixin = {
     /**
      * Criterion to filter by. Can be anything that is supported as an iteratee
