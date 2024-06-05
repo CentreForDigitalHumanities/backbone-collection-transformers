@@ -14,52 +14,19 @@ import {
     isFunction,
     isArray,
     isEmpty,
-    ListIterator,
 } from 'lodash';
-import {
-    Model as BModel,
-    Collection as BCollection,
-    AddOptions as BAddOptions,
-} from 'backbone';
+import { Model, Collection } from 'backbone';
+import { mixin } from '@uu-cdh/backbone-util';
 
-import mixin from '../core/mixin';
-import Model from '../core/model';
-import Collection from '../core/collection';
-import ProxyMixin from './collection-proxy';
-
-type AnyFunction = (...args: any[]) => any;
-// Possible types for mappers. @types/lodash's own `ListIteratee` is not
-// entirely correct.
-type IterateeParam = string | AnyFunction;
-
-interface Traceable {
-    // We add the following property to models in the mapped collection. Its
-    // keys are the `cid`s of any mapped collections that the model is a member
-    // of, and its values are the `cid`s of the corresponding models in the
-    // corresponding underlying collections. This is many-to-many, because
-    // mapper functions might return pre-existing models. This reverse lookup
-    // mechanism is somewhat similar to how you might polyfill `WeakMap`.
-    _ucid?: Record<string, string>;
-}
-
-interface AddOptions extends BAddOptions {
-    // The `add` and `set` methods accept both raw models from the underlying
-    // collection and already mapped models. The flag below conveys which of
-    // those scenarios is the case. Note however that this is an implementation
-    // detail, since client code is not supposed to call `.add()` or `.set()` on
-    // the mapped collection directly.
-    convert?: boolean;
-}
+import ProxyMixin from './collection-proxy.js';
 
 // Helper for the next function.
-const getAttributes = property('attributes');
+var getAttributes = property('attributes');
 
 // Convert the original mapper from the client code, which might be an iteratee
 // shorthand, to something that is certainly a function. Shorthands implicitly
 // apply to the attributes of a model rather than to the model as a whole.
-function wrapModelIteratee<
-    MSource extends BModel = Model
->(conversion: IterateeParam): AnyFunction {
+function wrapModelIteratee(conversion) {
     if (isFunction(conversion)) return conversion;
     return compose(iteratee(conversion), getAttributes);
 }
@@ -89,42 +56,26 @@ function wrapModelIteratee<
  *
  * Example of usage:
 
-    let idOnlyProxy = new MappedCollection(theRawCollection, model => {
+    var idOnlyProxy = new MappedCollection(theRawCollection, model => {
         return model.pick('@id');
     });
     idOnlyProxy.forEach(...);
     idOnlyProxy.on('add', ...);
 
  */
-interface MappedCollection<
-    MTarget extends BModel = Model,
-    MSource extends BModel = Model,
-    U extends BCollection<MSource> = Collection<MSource>
-> extends ProxyMixin<MSource, U> {
-    // Redeclaring the type of the add method in order to accomodate AddOptions.
-    add(model: {} | MTarget, options?: AddOptions): MTarget & Traceable;
-    add(models: Array<{} | MTarget>, options?: AddOptions): (MTarget & Traceable)[];
-}
-// Why do we have an interface and a class with the same name and the same type
-// parameters, but extending different base types? Because we are deriving both
-// from a class and from a mixin. Keyword for a web search: declaration merging.
-class MappedCollection<
-    MTarget extends BModel = Model,
-    MSource extends BModel = Model,
-    U extends BCollection<MSource> = Collection<MSource>
-> extends Collection<MTarget & Traceable> {
+class MappedCollection extends Collection {
     // Computs the mapped model or attributes hash corresponding to a model in
     // the underlying collection.
-    convert: AnyFunction;
+    convert;
     // Another lookup structure similar to `Traceable._ucid` (see above), but
     // from source model `cid`s to mapped model `cid`s.
-    _cidMap: Record<string, string>;
+    _cidMap;
     // Collections normally don't have a `cid`, but we add one in order to
     // accomodate `_cidMap` and `Traceable._ucid`.
-    cid: string;
+    cid;
     // The `cidPrefix` is passed to `_.uniqueId`, similar to how this is done
     // with `Backbone.Model.prototype.cidPrefix`.
-    cidPrefix: string;
+    cidPrefix;
 
     /**
      * Create a mapped collection, based on an input collection and a
@@ -138,22 +89,22 @@ class MappedCollection<
      * @param {Object} options (optional) The same options that may be passed
      * to Backbone.Collection.
      */
-    constructor(underlying: U, conversion: IterateeParam, options?: any) {
-        const convert = wrapModelIteratee(conversion);
+    constructor(underlying, conversion, options) {
+        var convert = wrapModelIteratee(conversion);
         options = defaults(options || {}, { underlying, convert });
         super(underlying.models, options);
     }
 
-    preinitialize(models: MSource[], {underlying, convert}): void {
+    preinitialize(models, {underlying, convert}) {
         extend(this, {
             _underlying: underlying,
-             convert,
-             _cidMap: {},
-             cid: uniqueId(this.cidPrefix),
+            convert,
+            _cidMap: {},
+            cid: uniqueId(this.cidPrefix),
         });
     }
 
-    initialize(models: MSource[], {underlying, convert}): void {
+    initialize(models, {underlying, convert}) {
         this.listenTo(underlying, {
             add: this.proxyAdd,
             remove: this.proxyRemove,
@@ -165,13 +116,13 @@ class MappedCollection<
 
     // Given a model from the underlying collection, obtain the `cid` of the
     // corresponding mapped model.
-    mappedCid(model: MSource): string {
+    mappedCid(model) {
         return this._cidMap[model.cid];
     }
 
     // Given a model from the underlying collection, obtain the corresponding
     // mapped model.
-    getMapped(model: MSource): MTarget & Traceable {
+    getMapped(model) {
         return this.get(this.mappedCid(model));
     }
 
@@ -180,9 +131,9 @@ class MappedCollection<
     // collection. The result might still be either an attributes hash or a
     // model; we ensure that the `_ucid` is set only on the model and not on the
     // attributes in `_prepareModel`.
-    preprocess(model: MSource): any {
-        const mapped = this.convert(model);
-        const _ucid = mapped._ucid || {};
+    preprocess(model) {
+        var mapped = this.convert(model);
+        var _ucid = mapped._ucid || {};
         extend(_ucid, {[this.cid]: model.cid});
         return extend(mapped, {_ucid});
     }
@@ -192,15 +143,13 @@ class MappedCollection<
     // automatic conversion is still possible by passing `convert: false`. Given
     // this choice, the type of the first argument is actually
     // `{} | MSource | MTarget`, but TypeScript does not accept this.
-    set(model: {} | MTarget, options): MTarget & Traceable;
-    set(models: Array<{} | MTarget>, options): (MTarget & Traceable)[];
     set(models, options) {
-        const singular = !isArray(models);
+        var singular = !isArray(models);
         if (singular) models = [models];
         if (options.convert !== false) {
-            models = map(models as unknown as MSource[], this.preprocess.bind(this));
+            models = map(models, this.preprocess.bind(this));
         }
-        const result = super.set(models, options);
+        var result = super.set(models, options);
         return singular ? result[0] : result;
     }
 
@@ -208,7 +157,7 @@ class MappedCollection<
      * Forwarding methods. You are not supposed to invoke these yourself.
      */
 
-    proxyAdd(model: MSource, collection: U, options: any): void {
+    proxyAdd(model, collection, options) {
         if (this.comparator) {
             // Mapped collection is maintaining its own order, so ignore any
             // specific placement in the underlying collection.
@@ -221,34 +170,34 @@ class MappedCollection<
         this.add(model, options);
     }
 
-    proxyRemove(model: MSource, collection: U, options: any): void {
+    proxyRemove(model, collection, options) {
         this.remove(model, options);
     }
 
-    proxyReset(collection: U, options: any): void {
+    proxyReset(collection, options) {
         this.reset(collection.models, options);
     }
 
-    proxySort(collection: U, options: any): void {
+    proxySort(collection, options) {
         if (this.comparator) return;
         // Align the order of the mapped models with that of the models in the
         // underlying collection. We do not call `this.sort()` because that
         // requires a `.comparator`. Instead, we mimic its implementation by
         // hardcoding a `sortBy` and then triggering the same event.
-        const order = invert(map(collection.models, this.mappedCid.bind(this)));
+        var order = invert(map(collection.models, this.mappedCid.bind(this)));
         this.models = this.sortBy(model => order[model.cid]);
         this.trigger('sort', this, options);
     }
 
-    proxyChange(model: MSource, options: any): void {
-        const oldModel = this.getMapped(model);
-        const newConversion = this.preprocess(model);
+    proxyChange(model, options) {
+        var oldModel = this.getMapped(model);
+        var newConversion = this.preprocess(model);
 
         // If the conversion produces the exact same complete model before and
         // after the change, nothing needs to be done.
         if (newConversion === oldModel) return;
 
-        if (newConversion instanceof BModel) {
+        if (newConversion instanceof Model) {
             // `oldModel` or `newConversion` might be a pre-existing model that
             // also appears in other collections. In that case, it is
             // undesirable to assign properties from `newConversion` to
@@ -257,7 +206,7 @@ class MappedCollection<
             // this and to avoid a costly additional `indexOf`, we exploit the
             // fact that the `'remove'` event payload includes the index of the
             // removed model already.
-            let position;
+            var position;
             this.once('remove', (m, c, {index}) => position = index)
             .remove(model);
             // We already set the `_ucid` administration in `this.preprocess`
@@ -272,19 +221,19 @@ class MappedCollection<
         // pollute the attributes with our internal `_ucid` administration, so
         // we delete that first.
         delete newConversion._ucid;
-        const newAttributes = newConversion;
+        var newAttributes = newConversion;
         // While we will be reusing `oldModel`, we also create a temporary model
         // from the `newAttributes` in order to assist the difference
         // computations below. This will no longer be necessary when
         // https://github.com/jashkenas/backbone/issues/3253 is implemented.
-        const newModel = new this.model(newAttributes);
-        const oldAttributes = oldModel.attributes;
+        var newModel = new this.model(newAttributes);
+        var oldAttributes = oldModel.attributes;
         // Attributes in `oldModel` that either changed value or are no longer
         // present in `newAttributes`.
-        const removedAttributes = newModel.changedAttributes(oldAttributes)||{};
+        var removedAttributes = newModel.changedAttributes(oldAttributes) || {};
         // Attributes in `newModel` that either changed value or were not yet
         // present in `oldAttributes`.
-        const addedAttributes = oldModel.changedAttributes(newAttributes) || {};
+        var addedAttributes = oldModel.changedAttributes(newAttributes) || {};
         // We take the difference between the former and the latter to obtain
         // only the attributes that should be removed entirely. We do this
         // because we don't want to accumulate obsolete attributes over time;
@@ -293,13 +242,13 @@ class MappedCollection<
         // this would temporarily leave the model blank and also trigger two
         // `'change:'` events for each attribute that is present both before and
         // after the update, even if some attributes don't change.
-        const deleteAttributes = omit(removedAttributes, keys(addedAttributes));
+        var deleteAttributes = omit(removedAttributes, keys(addedAttributes));
         oldModel.set(mapValues(deleteAttributes, noop), {unset: true})
         .set(newAttributes);
     }
 }
 
-const collectionProto = Collection.prototype;
+var collectionProto = Collection.prototype;
 
 mixin(MappedCollection.prototype, ProxyMixin.prototype, {
     cidPrefix: 'mc',
@@ -316,9 +265,9 @@ mixin(MappedCollection.prototype, ProxyMixin.prototype, {
         // and not on the attributes hash, so we remove it before passing it to
         // `super._prepareModel` and then add it back afterwards, when we know
         // for sure that we are dealing with a model.
-        const {_ucid} = attrs;
+        var {_ucid} = attrs;
         delete attrs._ucid;
-        const result = collectionProto['_prepareModel']
+        var result = collectionProto['_prepareModel']
         .call(this, attrs, options);
         return extend(result, {_ucid});
     },
@@ -327,7 +276,7 @@ mixin(MappedCollection.prototype, ProxyMixin.prototype, {
         // The `remove` method always receives members of the underlying
         // collection, so we look up the corresponding mapped models before
         // performing the actual removal.
-        const existing = map(models, this.getMapped.bind(this));
+        var existing = map(models, this.getMapped.bind(this));
         return collectionProto['_removeModels'].call(this, existing, options);
     },
 
