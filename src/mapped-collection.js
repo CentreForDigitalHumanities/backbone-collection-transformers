@@ -32,12 +32,14 @@ function wrapModelIteratee(conversion) {
     return compose(iteratee(conversion), getAttributes);
 }
 
+// The part of the constructor that runs before super().
 function ctorStart(underlying, conversion, options) {
     var convert = wrapModelIteratee(conversion);
     options = defaults(options || {}, { underlying, convert });
     return [underlying.models, options];
 }
 
+// The part of the constructor that runs after super().
 function ctorEnd(ctorArgs) {
     var underlying = ctorArgs[0];
     this.listenTo(underlying, {
@@ -49,38 +51,6 @@ function ctorEnd(ctorArgs) {
     });
 }
 
-/**
- * Synchronized mapped read-only proxy to a `Backbone.Collection`.
- *
- * Use this to keep a mapped version of some other, pre-existing
- * collection (the underlying collection). The mapped proxy stays
- * in sync with the underlying collection and will emit similar
- * events when the mapped version is affected. Do not fetch or
- * modify the proxy directly; such operations should be performed on
- * the underlying collection instead.
- *
- * By default, the models of the mapped collection will stay in the
- * same relative order as their respective corresponding models in
- * the underlying collection. You can override the `.comparator` in
- * order to specifiy different sorting behavior.
- *
- * **Note**: the mapping function must produce either attribute
- * hashes or full models. The mapping function should be injective,
- * i.e., at most one model in the underlying collection should be
- * mapped to any given id. There are two main ways in which you could
- * specify how ids for mapped models are determined: by including the
- * `idAttribute` in the result of the conversion function, or by
- * overriding `.modelId()` in a subclass of `MappedCollection`.
- *
- * Example of usage:
-
-    var idOnlyProxy = new MappedCollection(theRawCollection, model => {
-        return model.pick('@id');
-    });
-    idOnlyProxy.forEach(...);
-    idOnlyProxy.on('add', ...);
-
- */
 var MappedCollectionMixin = {
     cidPrefix: 'mc',
 
@@ -294,7 +264,38 @@ var MappedCollectionMixin = {
 
 export default function deriveMapped(Base) {
     Base = Base || Collection;
+    /**
+     * Synchronized mapped read-only proxy to a `Backbone.Collection`.
+     *
+     * Use this to keep a mapped version of some other, pre-existing
+     * collection (the underlying collection). The mapped proxy stays
+     * in sync with the underlying collection and will emit similar
+     * events when the mapped version is affected. Do not fetch or
+     * modify the proxy directly; such operations should be performed on
+     * the underlying collection instead.
+     *
+     * By default, the models of the mapped collection will stay in the
+     * same relative order as their respective corresponding models in
+     * the underlying collection. You can override the `.comparator` in
+     * order to specifiy different sorting behavior.
+     *
+     * **Note**: the mapping function must produce either attribute
+     * hashes or full models. The mapping function should be injective,
+     * i.e., at most one model in the underlying collection should be
+     * mapped to any given id. There are two main ways in which you could
+     * specify how ids for mapped models are determined: by including the
+     * `idAttribute` in the result of the conversion function, or by
+     * overriding `.modelId()` in a subclass of `MappedCollection`.
+     *
+     * @example
 
+       var idOnlyProxy = new MappedCollection(theRawCollection, model => {
+           return model.pick('@id');
+       });
+       idOnlyProxy.forEach(...);
+       idOnlyProxy.on('add', ...);
+
+    */
     var MappedCollection = deriveConstructor(Base, ctorStart, ctorEnd);
     mixin(MappedCollection.prototype, MappedCollectionMixin, CollectionProxy);
     return MappedCollection;
