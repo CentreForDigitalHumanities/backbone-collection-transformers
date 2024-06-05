@@ -18,7 +18,8 @@ import {
 import { Model, Collection } from 'backbone';
 import { mixin } from '@uu-cdh/backbone-util';
 
-import ProxyMixin from './collection-proxy.js';
+import { deriveConstructor } from './inheritance.js';
+import CollectionProxy from './collection-proxy.js';
 
 // Helper for the next function.
 var getAttributes = property('attributes');
@@ -29,6 +30,23 @@ var getAttributes = property('attributes');
 function wrapModelIteratee(conversion) {
     if (isFunction(conversion)) return conversion;
     return compose(iteratee(conversion), getAttributes);
+}
+
+function ctorStart(underlying, conversion, options) {
+    var convert = wrapModelIteratee(conversion);
+    options = defaults(options || {}, { underlying, convert });
+    return [underlying.models, options];
+}
+
+function ctorEnd(ctorArgs) {
+    var underlying = ctorArgs[0];
+    this.listenTo(underlying, {
+        add: this.proxyAdd,
+        remove: this.proxyRemove,
+        reset: this.proxyReset,
+        change: this.proxyChange,
+        sort: this.proxySort,
+    });
 }
 
 /**
@@ -63,19 +81,21 @@ function wrapModelIteratee(conversion) {
     idOnlyProxy.on('add', ...);
 
  */
-class MappedCollection extends Collection {
+var MappedCollectionMixin = {
+    cidPrefix: 'mc',
+
     // Computs the mapped model or attributes hash corresponding to a model in
     // the underlying collection.
-    convert;
+    convert,
     // Another lookup structure similar to `Traceable._ucid` (see above), but
     // from source model `cid`s to mapped model `cid`s.
-    _cidMap;
+    _cidMap,
     // Collections normally don't have a `cid`, but we add one in order to
     // accomodate `_cidMap` and `Traceable._ucid`.
-    cid;
+    cid,
     // The `cidPrefix` is passed to `_.uniqueId`, similar to how this is done
     // with `Backbone.Model.prototype.cidPrefix`.
-    cidPrefix;
+    cidPrefix,
 
     /**
      * Create a mapped collection, based on an input collection and a
@@ -89,11 +109,6 @@ class MappedCollection extends Collection {
      * @param {Object} options (optional) The same options that may be passed
      * to Backbone.Collection.
      */
-    constructor(underlying, conversion, options) {
-        var convert = wrapModelIteratee(conversion);
-        options = defaults(options || {}, { underlying, convert });
-        super(underlying.models, options);
-    }
 
     preinitialize(models, {underlying, convert}) {
         extend(this, {
@@ -102,29 +117,19 @@ class MappedCollection extends Collection {
             _cidMap: {},
             cid: uniqueId(this.cidPrefix),
         });
-    }
-
-    initialize(models, {underlying, convert}) {
-        this.listenTo(underlying, {
-            add: this.proxyAdd,
-            remove: this.proxyRemove,
-            reset: this.proxyReset,
-            change: this.proxyChange,
-            sort: this.proxySort,
-        });
-    }
+    },
 
     // Given a model from the underlying collection, obtain the `cid` of the
     // corresponding mapped model.
     mappedCid(model) {
         return this._cidMap[model.cid];
-    }
+    },
 
     // Given a model from the underlying collection, obtain the corresponding
     // mapped model.
     getMapped(model) {
         return this.get(this.mappedCid(model));
-    }
+    },
 
     // Given a model from the underlying collection, perform `convert` and add
     // our `_ucid` annotation in order to prepare it for insertion in the
@@ -136,7 +141,7 @@ class MappedCollection extends Collection {
         var _ucid = mapped._ucid || {};
         extend(_ucid, {[this.cid]: model.cid});
         return extend(mapped, {_ucid});
-    }
+    },
 
     // We extend the `set` method so that we can insert models from the
     // underlying collection and have them converted on the fly. Skipping
@@ -151,7 +156,7 @@ class MappedCollection extends Collection {
         }
         var result = super.set(models, options);
         return singular ? result[0] : result;
-    }
+    },
 
     /**
      * Forwarding methods. You are not supposed to invoke these yourself.
@@ -168,15 +173,15 @@ class MappedCollection extends Collection {
             options = defaults({sort: false}, options);
         }
         this.add(model, options);
-    }
+    },
 
     proxyRemove(model, collection, options) {
         this.remove(model, options);
-    }
+    },
 
     proxyReset(collection, options) {
         this.reset(collection.models, options);
-    }
+    },
 
     proxySort(collection, options) {
         if (this.comparator) return;
@@ -187,7 +192,7 @@ class MappedCollection extends Collection {
         var order = invert(map(collection.models, this.mappedCid.bind(this)));
         this.models = this.sortBy(model => order[model.cid]);
         this.trigger('sort', this, options);
-    }
+    },
 
     proxyChange(model, options) {
         var oldModel = this.getMapped(model);
@@ -245,13 +250,7 @@ class MappedCollection extends Collection {
         var deleteAttributes = omit(removedAttributes, keys(addedAttributes));
         oldModel.set(mapValues(deleteAttributes, noop), {unset: true})
         .set(newAttributes);
-    }
-}
-
-var collectionProto = Collection.prototype;
-
-mixin(MappedCollection.prototype, ProxyMixin.prototype, {
-    cidPrefix: 'mc',
+    },
 
     // The next four methods, which are implementation details of
     // `Backbone.Collection`, were incorrectly declared in @types/backbone, so
@@ -293,4 +292,10 @@ mixin(MappedCollection.prototype, ProxyMixin.prototype, {
     },
 });
 
-export default MappedCollection;
+export default function deriveMapped(Base) {
+    Base = Base || Collection;
+
+    var MappedCollection = deriveConstructor(Base, ctorStart, ctorEnd);
+    mixin(MappedCollection.prototype, MappedCollectionMixin, CollectionProxy);
+    return MappedCollection;
+}
