@@ -1,18 +1,14 @@
 import _, {
-    map,
-    keys,
-    extend,
     defaults,
-    omit,
+    extend,
     invert,
-    property,
-    flowRight as compose,
-    noop,
-    uniqueId,
     iteratee,
-    isFunction,
-    isArray,
-    isEmpty,
+    keys,
+    map,
+    noop,
+    omit,
+    property,
+    uniqueId,
 } from 'underscore';
 import { Model, Collection } from 'backbone';
 import { mixin } from '@uu-cdh/backbone-util';
@@ -22,6 +18,7 @@ import CollectionProxy from './collection-proxy.js';
 
 // Underscore/Lodash compatibility.
 var mapObject = _.mapObject || _.mapValues;
+var compose = _.compose || _.flowRight;
 
 // Helper for the next function.
 var getAttributes = property('attributes');
@@ -37,7 +34,6 @@ function wrapModelIteratee(conversion) {
 // The part of the constructor that runs before super().
 function ctorStart(underlying, conversion, options) {
     var convert = wrapModelIteratee(conversion);
-    options = defaults(options || {}, { underlying, convert });
     return [underlying.models, options];
 }
 
@@ -148,7 +144,6 @@ var MappedCollectionMixin = {
         } else {
             // Mapped collection is mirroring the order of the underlying
             // collection, so prevent it from sorting.
-            options = defaults({sort: false}, options);
         }
         this.add(model, options);
     },
@@ -255,8 +250,7 @@ var MappedCollectionMixin = {
         // for sure that we are dealing with a model.
         var {_ucid} = attrs;
         delete attrs._ucid;
-        var result = collectionProto['_prepareModel']
-        .call(this, attrs, options);
+        var result = super._prepareModel(attrs, options);
         return extend(result, {_ucid});
     },
 
@@ -265,22 +259,30 @@ var MappedCollectionMixin = {
         // collection, so we look up the corresponding mapped models before
         // performing the actual removal.
         var existing = map(models, this.getMapped.bind(this));
-        return collectionProto['_removeModels'].call(this, existing, options);
+        return super._removeModels(existing, options);
     },
 
     _addReference(model, options) {
         this._cidMap[model._ucid[this.cid]] = model.cid;
-        return collectionProto['_addReference'].call(this, model, options);
+        return super._addReference(model, options);
     },
 
     _removeReference(model, options) {
         delete this._cidMap[model._ucid[this.cid]];
         delete model._ucid[this.cid];
         if (isEmpty(model._ucid)) delete model._ucid;
-        return collectionProto['_removeReference'].call(this, model, options);
+        return super._removeReference(model, options);
     },
 });
 
+/**
+ * Derive a mapped collection class from a given base class.
+ * @param {typeof Backbone.Collection} [Base=Backbone.Collection] Base
+ * collection class to derive from.
+ * @returns {typeof deriveMapped~MappedCollection} Mapped collection class.
+ * Instances of this class will contain a corresponding mapped model for each
+ * model in an instance of the Base class.
+ */
 export default function deriveMapped(Base) {
     Base = Base || Collection;
     /**
