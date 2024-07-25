@@ -1,6 +1,5 @@
-import {
+import _, {
     map,
-    mapValues,
     keys,
     extend,
     defaults,
@@ -14,12 +13,15 @@ import {
     isFunction,
     isArray,
     isEmpty,
-} from 'lodash';
+} from 'underscore';
 import { Model, Collection } from 'backbone';
 import { mixin } from '@uu-cdh/backbone-util';
 
 import { deriveConstructor } from './inheritance.js';
 import CollectionProxy from './collection-proxy.js';
+
+// Underscore/Lodash compatibility.
+var mapObject = _.mapObject || _.mapValues;
 
 // Helper for the next function.
 var getAttributes = property('attributes');
@@ -51,35 +53,35 @@ function ctorEnd(ctorArgs) {
     });
 }
 
+// The instance methods and properties of a MappedCollection.
+/** @lends deriveMapped~MappedCollection.prototype */
 var MappedCollectionMixin = {
-    cidPrefix: 'mc',
-
-    // Computs the mapped model or attributes hash corresponding to a model in
-    // the underlying collection.
-    convert,
-    // Another lookup structure similar to `Traceable._ucid` (see above), but
-    // from source model `cid`s to mapped model `cid`s.
-    _cidMap,
-    // Collections normally don't have a `cid`, but we add one in order to
-    // accomodate `_cidMap` and `Traceable._ucid`.
-    cid,
-    // The `cidPrefix` is passed to `_.uniqueId`, similar to how this is done
-    // with `Backbone.Model.prototype.cidPrefix`.
-    cidPrefix,
-
     /**
-     * Create a mapped collection, based on an input collection and a
-     * conversion iteratee.
-     * @param {Collection} underlying The input collection.
-     * @param {String|Function} conversion A function that takes a single model
-     * from `underlying` as input, or a string naming an attribute of the
-     * underlying model type that should be read in order to obtain the mapped
-     * model. In either case, the result of the conversion should be either an
-     * attributes hash or a model.
-     * @param {Object} options (optional) The same options that may be passed
-     * to Backbone.Collection.
+     * Conversion function that maps a model in the underlying collection to a
+     * corresponding model or attributes hash in the mapped collection.
+     * @method convert
+     * @param {Backbone.Model} model - Model to convert.
+     * @returns {object|Backbone.Model} attributes hash or model as it should be
+     * stored in the mapped collection.
      */
 
+    /**
+     * Unique identifier for the collection. This is kept in order to be able to
+     * trace relations from mapped models to potentially multiple containing
+     * MappedCollection instances.
+     * @member {string} cid
+     */
+
+    /**
+     * The `cidPrefix` is passed to `_.uniqueId` in order to determine the
+     * `cid`. This is similar to how it is done with `Backbone.Model#cidPrefix`.
+     */
+    cidPrefix: 'mc',
+
+    /**
+     * If you subclass a mapped collection, make sure to call super in the
+     * preinitialize method.
+     */
     preinitialize(models, {underlying, convert}) {
         extend(this, {
             _underlying: underlying,
@@ -89,35 +91,41 @@ var MappedCollectionMixin = {
         });
     },
 
-    // Given a model from the underlying collection, obtain the `cid` of the
-    // corresponding mapped model.
+    /**
+     * Given a model from the underlying collection, obtain the `cid` of the
+     * corresponding mapped model.
+     */
     mappedCid(model) {
         return this._cidMap[model.cid];
     },
 
-    // Given a model from the underlying collection, obtain the corresponding
-    // mapped model.
+    /**
+     * Given a model from the underlying collection, obtain the corresponding
+     * mapped model.
+     */
     getMapped(model) {
         return this.get(this.mappedCid(model));
     },
 
-    // Given a model from the underlying collection, perform `convert` and add
-    // our `_ucid` annotation in order to prepare it for insertion in the
-    // collection. The result might still be either an attributes hash or a
-    // model; we ensure that the `_ucid` is set only on the model and not on the
-    // attributes in `_prepareModel`.
+    /**
+     * Given a model from the underlying collection, perform `convert` and
+     * prepare the result for insertion in the collection. The result might
+     * still be either an attributes hash or a model.
+     */
     preprocess(model) {
         var mapped = this.convert(model);
+        // Add our `_ucid` annotation. We ensure that the `_ucid` is set only on
+        // the model and not on the attributes in `_prepareModel`.
         var _ucid = mapped._ucid || {};
         extend(_ucid, {[this.cid]: model.cid});
         return extend(mapped, {_ucid});
     },
 
-    // We extend the `set` method so that we can insert models from the
-    // underlying collection and have them converted on the fly. Skipping
-    // automatic conversion is still possible by passing `convert: false`. Given
-    // this choice, the type of the first argument is actually
-    // `{} | MSource | MTarget`, but TypeScript does not accept this.
+    /**
+     * We extend the `set` method so that we can insert models from the
+     * underlying collection and have them converted on the fly. Skipping
+     * automatic conversion is still possible by passing `convert: false`.
+     */
     set(models, options) {
         var singular = !isArray(models);
         if (singular) models = [models];
@@ -129,9 +137,9 @@ var MappedCollectionMixin = {
     },
 
     /**
-     * Forwarding methods. You are not supposed to invoke these yourself.
+     * This method is automatically invoked when a model is added to the
+     * underlying collection.
      */
-
     proxyAdd(model, collection, options) {
         if (this.comparator) {
             // Mapped collection is maintaining its own order, so ignore any
@@ -145,14 +153,26 @@ var MappedCollectionMixin = {
         this.add(model, options);
     },
 
+    /**
+     * This method is automatically invoked when a model is removed from the
+     * underlying collection.
+     */
     proxyRemove(model, collection, options) {
         this.remove(model, options);
     },
 
+    /**
+     * This method is automatically invoked when the underlying collection is
+     * reset.
+     */
     proxyReset(collection, options) {
         this.reset(collection.models, options);
     },
 
+    /**
+     * This method is automatically invoked when the underlying collection is
+     * sorted.
+     */
     proxySort(collection, options) {
         if (this.comparator) return;
         // Align the order of the mapped models with that of the models in the
@@ -164,6 +184,10 @@ var MappedCollectionMixin = {
         this.trigger('sort', this, options);
     },
 
+    /**
+     * This method is automatically invoked when a model in the underlying
+     * collection changes.
+     */
     proxyChange(model, options) {
         var oldModel = this.getMapped(model);
         var newConversion = this.preprocess(model);
@@ -218,14 +242,9 @@ var MappedCollectionMixin = {
         // `'change:'` events for each attribute that is present both before and
         // after the update, even if some attributes don't change.
         var deleteAttributes = omit(removedAttributes, keys(addedAttributes));
-        oldModel.set(mapValues(deleteAttributes, noop), {unset: true})
+        oldModel.set(mapObject(deleteAttributes, noop), {unset: true})
         .set(newAttributes);
     },
-
-    // The next four methods, which are implementation details of
-    // `Backbone.Collection`, were incorrectly declared in @types/backbone, so
-    // we override them outside of the class body, where TypeScript does not
-    // interfere as much.
 
     _prepareModel(attrs, options) {
         // `attrs` might be either an actual attributes hash or an already
@@ -287,10 +306,25 @@ export default function deriveMapped(Base) {
      * `idAttribute` in the result of the conversion function, or by
      * overriding `.modelId()` in a subclass of `MappedCollection`.
      *
+     * @class
+     * @mixes CollectionProxy
+     * @param {Collection} underlying - The input collection.
+     * @param {String|Function} conversion - A function that takes a single model
+     * from `underlying` as input, or a string naming an attribute of the
+     * underlying model type that should be read in order to obtain the mapped
+     * model. In either case, the result of the conversion should be either an
+     * attributes hash or a model.
+     * @param {Object} [options] - The same options that may be passed
+     * to [Backbone.Collection]]{@link
+     * https://backbonejs.org/#Collection-constructor}.
+     * @param {string|Function} options.comparator - Specifies how to sort the
+     * mapped collection. If omitted, the order of the underlying collection is
+     * mirrorred.
+
      * @example
 
        var idOnlyProxy = new MappedCollection(theRawCollection, model => {
-           return model.pick('@id');
+           return model.pick('id');
        });
        idOnlyProxy.forEach(...);
        idOnlyProxy.on('add', ...);
