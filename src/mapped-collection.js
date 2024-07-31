@@ -103,6 +103,13 @@ var MappedCollectionMixin = {
         return this.get(this.mappedCid(model));
     },
 
+    // We add a private `_ucid` property to models in the mapped collection. Its
+    // keys are the `cid`s of any mapped collections that the model is a member
+    // of, and its values are the `cid`s of the corresponding models in the
+    // corresponding underlying collections. This is many-to-many, because
+    // mapper functions might return pre-existing models. This reverse lookup
+    // mechanism is somewhat similar to how you might polyfill `WeakMap`.
+
     /**
      * Given a model from the underlying collection, perform `convert` and
      * prepare the result for insertion in the collection. The result might
