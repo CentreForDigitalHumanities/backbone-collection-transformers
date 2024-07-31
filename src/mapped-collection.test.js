@@ -1,22 +1,10 @@
-import {
-    each,
-    map,
-    extend,
-    pick,
-    clone,
-    property,
-    propertyOf,
-    identity,
-    random,
-    chain,
-} from 'lodash';
+import _ from 'underscore';
+import { Model, Collection } from 'backbone';
 
-import Model from '../core/model';
-import Collection from '../core/collection';
-import MappedCollection from './mapped-collection';
+import MappedCollection from './mapped-collection.js';
 
 // Attributes that will go in the underlying collection.
-const butlers = [{
+var butlers = [{
     id: 1,
     name: 'James',
     details: {
@@ -47,7 +35,7 @@ class TestModel extends Model {}
 TestModel.prototype.idAttribute = 'flower';
 
 // Common properties among the `mapperConfigs` below.
-const commonMapperConfigs = {
+var commonMapperConfigs = {
     // Mappers that propagate the `id` and `name` attributes.
     toplevel: {
         // `comparator` that we will set on the mapped model when we test that
@@ -61,27 +49,27 @@ const commonMapperConfigs = {
         patch: {id: 4, name: 'Edmund'},
         // How to obtain a hash from `patch` above, that we can compare the
         // mapped model against to verify that the change has propagated.
-        patchedAttributes: identity,
+        patchedAttributes: _.identity,
     },
     // Mappers that extract the `details` hash.
     nested: {
         comparator: 'yearsOfService',
         expectedOrder: [1, 0, 2],
         patch: {details: {flower: 'chrysant', age: 44}},
-        patchedAttributes: property('details'),
+        patchedAttributes: _.property('details'),
     },
 };
 
 // We repeat the whole test suite for each type of mapping function configured
 // below.
-const mapperConfigs = [{
+var mapperConfigs = [{
     // The description is used in the `describe()`, but we also detect the
     // keywords `'identity'`, `'function'` and `'model'` for further
     // customization of the tests.
     description: 'the identity function',
     // The mapper is the second argument passed to the `MappedCollection`
     // constructor, a.k.a. the conversion iteratee.
-    mapper: identity,
+    mapper: _.identity,
     category: 'toplevel',
 }, {
     description: 'a function producing a hash with an id',
@@ -110,16 +98,16 @@ const mapperConfigs = [{
 
 // Regular expressions that we will repeatedly use to detect the keywords
 // mentioned in the `mapperConfigs` above.
-const functionPattern = /function/;
-const modelPattern = /model/;
-const identityPattern = /identity/;
+var functionPattern = /function/;
+var modelPattern = /model/;
+var identityPattern = /identity/;
 
 // Given a `source` array and an `order` array of indices, return a new array
 // with the elements of `source` in the given `order`.
 // reorder(['a', 'b', 'c'], [1, 0, 2]) => ['b', 'a', 'c']
 // reorder(['a', 'b', 'c'], [1, 1]) => ['b', 'b']
 function reorder(source, order) {
-    return map(order, propertyOf(source));
+    return _.map(order, _.propertyOf(source));
 }
 
 // Repeated pattern to check both the contents and the order of a collection.
@@ -133,16 +121,16 @@ describe('MappedCollection', function() {
         this.underlying = new Collection(butlers);
     });
 
-    each(mapperConfigs, function({description, mapper, category}) {
-        const {
+    _.each(mapperConfigs, function({description, mapper, category}) {
+        var {
             comparator, expectedOrder, patch, patchedAttributes
         } = commonMapperConfigs[category];
 
         // Remember those keywords we mentioned above?
-        const takesModel = functionPattern.test(description);
-        const returnsNewModel = modelPattern.test(description);
-        const isIdentity = identityPattern.test(description);
-        const returnsModel = returnsNewModel || isIdentity;
+        var takesModel = functionPattern.test(description);
+        var returnsNewModel = modelPattern.test(description);
+        var isIdentity = identityPattern.test(description);
+        var returnsModel = returnsNewModel || isIdentity;
 
         describe('with ' + description, function() {
             beforeEach(function() {
@@ -153,11 +141,11 @@ describe('MappedCollection', function() {
                 // logic from the `./mapped-collection.ts` module.
                 // During the tests, the models will not always stay in this
                 // order; that's why we have the `reorder` helper function.
-                this.expected = (chain(this.underlying.models) as any)
-                .map(takesModel ? identity : 'attributes')
+                this.expected = (_.chain(this.underlying.models) as any)
+                .map(takesModel ? _.identity : 'attributes')
                 .map(mapper)
-                .map(returnsModel ? 'attributes' : identity)
-                .map(clone)
+                .map(returnsModel ? 'attributes' : _.identity)
+                .map(_.clone)
                 .value();
             });
 
@@ -172,20 +160,21 @@ describe('MappedCollection', function() {
 
             function expectCorrespondence() {
                 this.underlying.each((model, index) => {
-                    expect(this.mapped.at(index))
-                    .toBe(this.mapped.getMapped(model));
+                    assert(
+                        this.mapped.at(index) === this.mapped.getMapped(model)
+                    );
                 });
             }
 
             // Now to business: the specs.
 
             it('constructs with corresponding models', function() {
-                expect(this.mapped.toJSON()).toEqual(this.expected);
+                assert.deepStrictEqual(this.mapped.toJSON(), this.expected);
                 expectCorrespondence.call(this);
             });
 
             it('resets along with the underlying collection', function() {
-                const spy = jasmine.createSpy();
+                var spy = jasmine.createSpy();
                 this.mapped.on('reset', spy);
                 // When we remove all models from the underlying, the mapped
                 // collection should empty, too.
@@ -195,16 +184,16 @@ describe('MappedCollection', function() {
                 // Likewise when we put all models back.
                 this.underlying.reset(butlers);
                 expect(spy).toHaveBeenCalledTimes(2);
-                expect(this.mapped.toJSON()).toEqual(this.expected);
+                assert.deepStrictEqual(this.mapped.toJSON(), this.expected);
             });
 
             it('tracks additions and removals', function() {
-                const removeSpy = jasmine.createSpy('remove');
-                const addSpy = jasmine.createSpy('add');
+                var removeSpy = jasmine.createSpy('remove');
+                var addSpy = jasmine.createSpy('add');
                 this.mapped.on({remove: removeSpy, add: addSpy});
                 // Remove the underlying model with id: 3.
-                const sacrifice = this.underlying.get(3);
-                const oldCorresponding = this.mapped.getMapped(sacrifice);
+                var sacrifice = this.underlying.get(3);
+                var oldCorresponding = this.mapped.getMapped(sacrifice);
                 this.underlying.remove(sacrifice);
                 expect(removeSpy).toHaveBeenCalledTimes(1);
                 expect(removeSpy).toHaveBeenCalledWith(
@@ -214,19 +203,18 @@ describe('MappedCollection', function() {
                 expect(this.mapped.has(oldCorresponding)).toBeFalsy();
                 expect(this.mapped.findWhere(this.expected[2])).toBeUndefined();
                 // Restore.
-                const successor = this.underlying.add(butlers[2]);
-                const newCorresponding = this.mapped.getMapped(successor);
+                var successor = this.underlying.add(butlers[2]);
+                var newCorresponding = this.mapped.getMapped(successor);
                 expect(removeSpy).toHaveBeenCalledTimes(1);
                 expect(addSpy).toHaveBeenCalledTimes(1);
                 expect(addSpy).toHaveBeenCalledWith(
                     newCorresponding, this.mapped, jasmine.anything()
                 );
-                expect(this.mapped.findWhere(this.expected[2]))
-                .toBe(newCorresponding);
+                assert(this.mapped.findWhere(this.expected[2]) === newCorresponding);
             });
 
             it('tracks the underlying order by default', function() {
-                const spy = jasmine.createSpy();
+                var spy = jasmine.createSpy();
                 this.mapped.on('sort', spy);
                 // Move the third model to the first position.
                 this.underlying.unshift(this.underlying.pop());
@@ -240,8 +228,8 @@ describe('MappedCollection', function() {
             });
 
             it('can maintain a separate order', function() {
-                const spy = jasmine.createSpy();
-                const expectSorted = (calls) => {
+                var spy = jasmine.createSpy();
+                var expectSorted = (calls) => {
                     expect(spy).toHaveBeenCalledTimes(calls);
                     // We are basically going to verify that, no matter how we
                     // juggle the underlying collection, the mapped collection
@@ -251,7 +239,7 @@ describe('MappedCollection', function() {
                 }
                 this.mapped.on('sort', spy);
                 // Direct sort on the mapped collection.
-                extend(this.mapped, {comparator}).sort();
+                _.extend(this.mapped, {comparator}).sort();
                 expectSorted(1);
                 // Same juggling as in the "tracks additions and removals" spec.
                 this.underlying.remove(3);
@@ -271,7 +259,7 @@ describe('MappedCollection', function() {
             // As discussed in the `commonMapperConfigs`, the line below
             // produces either an `{id, name}` hash or a `{county, flower,
             // yearsOfService}` hash.
-            const checkAttributes = patchedAttributes(patch);
+            var checkAttributes = patchedAttributes(patch);
 
             // In the final spec, we test how the `'change'` event is handled.
             // The mapper needs to be invoked again when this happens. In
@@ -291,12 +279,11 @@ describe('MappedCollection', function() {
                     // corner cases due to attribute values or position within
                     // the collection are a bit less likely to go undetected in
                     // this way.
-                    const index = random(this.underlying.length - 1);
-                    const inputModel = this.underlying.at(index);
-                    const originalOutput = this.mapped.at(index);
-                    expect(originalOutput)
-                    .toBe(this.mapped.getMapped(inputModel));
-                    const spy = jasmine.createSpy();
+                    var index = _.random(this.underlying.length - 1);
+                    var inputModel = this.underlying.at(index);
+                    var originalOutput = this.mapped.at(index);
+                    assert(originalOutput === this.mapped.getMapped(inputModel));
+                    var spy = jasmine.createSpy();
                     originalOutput.on('change', spy);
                     // Modify the guinea pig model.
                     inputModel.set(patch);
@@ -307,13 +294,13 @@ describe('MappedCollection', function() {
                     // Instead, it should be replaced by a new model at the same
                     // index.
                     expect(this.mapped.has(originalOutput)).toBeFalsy();
-                    const newOutput = this.mapped.at(index);
+                    var newOutput = this.mapped.at(index);
                     expect(newOutput).not.toBe(originalOutput);
                     expect(newOutput.toJSON())
                     .toEqual(jasmine.objectContaining(checkAttributes));
                     // All of this magic must obviously happen without otherwise
                     // corrupting the correspondence.
-                    expect(this.mapped.length).toBe(this.underlying.length);
+                    assert(this.mapped.length === this.underlying.length);
                     expectCorrespondence.call(this);
                 });
             // Otherwise, i.e., when the mapper returns an attributes hash or
@@ -323,12 +310,11 @@ describe('MappedCollection', function() {
             } else {
                 it('updates previously mapped models', function() {
                     // Again, a "slow fuzz test".
-                    const index = random(this.underlying.length - 1);
-                    const inputModel = this.underlying.at(index);
-                    const originalOutput = this.mapped.at(index);
-                    expect(originalOutput)
-                    .toBe(this.mapped.getMapped(inputModel));
-                    const spy = jasmine.createSpy();
+                    var index = _.random(this.underlying.length - 1);
+                    var inputModel = this.underlying.at(index);
+                    var originalOutput = this.mapped.at(index);
+                    assert(originalOutput === this.mapped.getMapped(inputModel));
+                    var spy = jasmine.createSpy();
                     originalOutput.on('change', spy);
                     // So far, everything is still the same. Now, modify the
                     // guinea pig again.
@@ -341,8 +327,8 @@ describe('MappedCollection', function() {
                     // index, but we retrieve it again just in case this fails
                     // and we need further diagnostics.
                     expect(this.mapped.has(originalOutput)).toBeTruthy();
-                    const newOutput = this.mapped.at(index);
-                    expect(newOutput).toBe(originalOutput);
+                    var newOutput = this.mapped.at(index);
+                    assert(newOutput === originalOutput);
                     expect(newOutput.toJSON())
                     .toEqual(jasmine.objectContaining(checkAttributes));
                     // Since the attributes are updated in place, we
@@ -350,10 +336,10 @@ describe('MappedCollection', function() {
                     // internal correspondence administration.
                     expect(newOutput.has('_ucid')).toBeFalsy();
                     // Finally, double-check for any other possible corruption.
-                    expect(this.mapped.length).toBe(this.underlying.length);
+                    assert(this.mapped.length === this.underlying.length);
                     expectCorrespondence.call(this);
                 });
             }
         });
-    });
+    }, this);
 });
