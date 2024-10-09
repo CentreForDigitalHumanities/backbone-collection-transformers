@@ -1,1 +1,1 @@
-import './src/collection-proxy.test.js';
+import './src/*.test.js';
