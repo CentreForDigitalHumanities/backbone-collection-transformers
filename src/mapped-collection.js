@@ -1,6 +1,8 @@
 import _, {
     extend,
     invert,
+    isArray,
+    isEmpty,
     isFunction,
     iteratee,
     keys,
@@ -13,7 +15,7 @@ import _, {
 import { Model, Collection } from 'backbone';
 import { mixin } from '@uu-cdh/backbone-util';
 
-import { deriveConstructor } from './inheritance.js';
+import { deriveConstructor, parent } from './inheritance.js';
 import CollectionProxy from './collection-proxy.js';
 
 // Underscore/Lodash compatibility.
@@ -33,7 +35,7 @@ function wrapModelIteratee(conversion) {
 
 // The part of the constructor that runs before super().
 function ctorStart(underlying, conversion, options) {
-    var convert = wrapModelIteratee(conversion);
+    options = extend({convert: wrapModelIteratee(conversion)}, options);
     return [underlying.models, options];
 }
 
@@ -135,7 +137,7 @@ var MappedCollectionMixin = {
         if (options.convert !== false) {
             models = map(models, this.preprocess.bind(this));
         }
-        var result = super.set(models, options);
+        var result = parent(this).set.call(this, models, options);
         return singular ? result[0] : result;
     },
 
@@ -257,7 +259,7 @@ var MappedCollectionMixin = {
         // for sure that we are dealing with a model.
         var {_ucid} = attrs;
         delete attrs._ucid;
-        var result = super._prepareModel(attrs, options);
+        var result = parent(this)._prepareModel.call(this, attrs, options);
         return extend(result, {_ucid});
     },
 
@@ -266,19 +268,19 @@ var MappedCollectionMixin = {
         // collection, so we look up the corresponding mapped models before
         // performing the actual removal.
         var existing = map(models, this.getMapped.bind(this));
-        return super._removeModels(existing, options);
+        return parent(this)._removeModels.call(this, existing, options);
     },
 
     _addReference(model, options) {
         this._cidMap[model._ucid[this.cid]] = model.cid;
-        return super._addReference(model, options);
+        return parent(this)._addReference.call(this, model, options);
     },
 
     _removeReference(model, options) {
         delete this._cidMap[model._ucid[this.cid]];
         delete model._ucid[this.cid];
         if (isEmpty(model._ucid)) delete model._ucid;
-        return super._removeReference(model, options);
+        return parent(this)._removeReference.call(this, model, options);
     },
 };
 

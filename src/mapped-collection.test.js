@@ -4,7 +4,9 @@ import sinon from 'sinon';
 import _ from 'underscore';
 import { Model, Collection } from 'backbone';
 
-import MappedCollection from './mapped-collection.js';
+import deriveMapped from './mapped-collection.js';
+
+var MappedCollection = deriveMapped();
 
 // Attributes that will go in the underlying collection.
 var butlers = [{
