@@ -55,3 +55,35 @@ export function deriveConstructor(Base, prepare, initialize) {
     Object.setPrototypeOf(Derived, Base);
     return Derived;
 }
+
+/**
+ * Retrieve the parent constructor or prototype of a constructor, class instance
+ * or other object. This function can be used as a generic `super` emulator, but
+ * dynamically scoped.
+ * @param {function|object} child - Function or object of which to retrieve the
+ * parent.
+ * @returns {function|object|null} If the `child` is a constructor, its parent
+ * constructor; if the `child` is an instance of a class, the prototype of its
+ * superclass; in all remaining cases, the prototype of `child`.
+ */
+export function parent(child) {
+    // Catch invalid input early to prevent runtime errors.
+    if (!child) return undefined;
+    // `child` might be a constructor, in which case we want to proceed from its
+    // `prototype`.
+    var instance = child.prototype || child;
+    var prototype = Object.getPrototypeOf(instance);
+    // If `child` is a constructor, we are done; the constructor of `child`'s
+    // prototype's prototype is what we need.
+    if (child !== instance) return prototype.constructor;
+    // If `child` is the prototype of a constructor, then its prototype is what
+    // we need.
+    if (child.hasOwnProperty('constructor')) return prototype;
+    // If `child` derived directly from another object through `Object.create`
+    // or similar, we are also done; that base is what we need.
+    if (!prototype.hasOwnProperty('constructor')) return prototype;
+    // In remaining cases, we are dealing with an instance of a class. The
+    // methods of its prototype are generally what we expect to call already
+    // when we write `this.method()`, so we need to go one layer deeper.
+    return Object.getPrototypeOf(prototype);
+}
