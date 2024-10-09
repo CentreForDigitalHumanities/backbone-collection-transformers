@@ -55,3 +55,10 @@ export function deriveConstructor(Base, prepare, initialize) {
     Object.setPrototypeOf(Derived, Base);
     return Derived;
 }
+
+export function parent(child) {
+    var prototype = child.prototype || Object.getPrototypeOf(child);
+    var parentProto = Object.getPrototypeOf(prototype);
+    if (child.prototype) return parentProto.constructor;
+    return parentProto;
+}
