@@ -111,8 +111,8 @@ function reorder(source, order) {
 }
 
 // Repeated pattern to check both the contents and the order of a collection.
-function expectOrder(collection, attributes, order) {
-    expect(collection.toJSON()).toEqual(reorder(attributes, order));
+function assertOrder(collection, attributes, order) {
+    assert.deepStrictEqual(collection.toJSON(), reorder(attributes, order));
 }
 
 // Finally! The tests.
@@ -138,10 +138,10 @@ describe('MappedCollection', function() {
 
                 // The expected *attributes* of the models in `this.mapped`,
                 // which we obviously have to compute without involving any
-                // logic from the `./mapped-collection.ts` module.
+                // logic from the `./mapped-collection.js` module.
                 // During the tests, the models will not always stay in this
                 // order; that's why we have the `reorder` helper function.
-                this.expected = (_.chain(this.underlying.models) as any)
+                this.expected = _.chain(this.underlying.models)
                 .map(takesModel ? _.identity : 'attributes')
                 .map(mapper)
                 .map(returnsModel ? 'attributes' : _.identity)
@@ -149,16 +149,16 @@ describe('MappedCollection', function() {
                 .value();
             });
 
-            // Tow more repeated patterns. These functions could have been
+            // Two more repeated patterns. These functions could have been
             // lifted to module scope, but the assumptions they make about
             // `this` are only valid within the current suite.
 
-            function expectSameOrder(order) {
-                expectOrder(this.underlying, butlers, order);
-                expectOrder(this.mapped, this.expected, order);
+            function assertSameOrder(order) {
+                assertOrder(this.underlying, butlers, order);
+                assertOrder(this.mapped, this.expected, order);
             }
 
-            function expectCorrespondence() {
+            function assertCorrespondence() {
                 this.underlying.each((model, index) => {
                     assert(
                         this.mapped.at(index) === this.mapped.getMapped(model)
@@ -170,90 +170,86 @@ describe('MappedCollection', function() {
 
             it('constructs with corresponding models', function() {
                 assert.deepStrictEqual(this.mapped.toJSON(), this.expected);
-                expectCorrespondence.call(this);
+                assertCorrespondence.call(this);
             });
 
             it('resets along with the underlying collection', function() {
-                var spy = jasmine.createSpy();
+                var spy = sinon.fake();
                 this.mapped.on('reset', spy);
                 // When we remove all models from the underlying, the mapped
                 // collection should empty, too.
                 this.underlying.reset();
-                expect(spy).toHaveBeenCalledTimes(1);
-                expect(this.mapped.isEmpty()).toBeTruthy();
+                assert(spy.callCount === 1);
+                assert(this.mapped.isEmpty());
                 // Likewise when we put all models back.
                 this.underlying.reset(butlers);
-                expect(spy).toHaveBeenCalledTimes(2);
+                assert(spy.callCount === 2);
                 assert.deepStrictEqual(this.mapped.toJSON(), this.expected);
             });
 
             it('tracks additions and removals', function() {
-                var removeSpy = jasmine.createSpy('remove');
-                var addSpy = jasmine.createSpy('add');
+                var removeSpy = sinon.fake();
+                var addSpy = sinon.fake();
                 this.mapped.on({remove: removeSpy, add: addSpy});
                 // Remove the underlying model with id: 3.
                 var sacrifice = this.underlying.get(3);
                 var oldCorresponding = this.mapped.getMapped(sacrifice);
                 this.underlying.remove(sacrifice);
-                expect(removeSpy).toHaveBeenCalledTimes(1);
-                expect(removeSpy).toHaveBeenCalledWith(
-                    oldCorresponding, this.mapped, jasmine.anything()
-                );
-                expect(addSpy).toHaveBeenCalledTimes(0);
-                expect(this.mapped.has(oldCorresponding)).toBeFalsy();
-                expect(this.mapped.findWhere(this.expected[2])).toBeUndefined();
+                assert(removeSpy.callCount === 1);
+                assert(removeSpy.calledWith(oldCorresponding, this.mapped, sinon.match.any));
+                assert(addSpy.callCount === 0);
+                assert(!this.mapped.has(oldCorresponding));
+                assert(_.isUndefined(this.mapped.findWhere(this.expected[2])));
                 // Restore.
                 var successor = this.underlying.add(butlers[2]);
                 var newCorresponding = this.mapped.getMapped(successor);
-                expect(removeSpy).toHaveBeenCalledTimes(1);
-                expect(addSpy).toHaveBeenCalledTimes(1);
-                expect(addSpy).toHaveBeenCalledWith(
-                    newCorresponding, this.mapped, jasmine.anything()
-                );
+                assert(removeSpy.callCount === 1);
+                assert(addSpy.callCount === 1);
+                assert(addSpy.calledWith(newCorresponding, this.mapped, sinon.match.any));
                 assert(this.mapped.findWhere(this.expected[2]) === newCorresponding);
             });
 
             it('tracks the underlying order by default', function() {
-                var spy = jasmine.createSpy();
+                var spy = sinon.fake();
                 this.mapped.on('sort', spy);
                 // Move the third model to the first position.
                 this.underlying.unshift(this.underlying.pop());
-                expect(spy).toHaveBeenCalledTimes(0);
-                expectSameOrder.call(this, [2, 0, 1]);
+                assert(spy.callCount === 0);
+                assertSameOrder.call(this, [2, 0, 1]);
                 // Put the underlying collection in decreasing order of id.
                 this.underlying.comparator = ({id}) => -id;
                 this.underlying.sort();
-                expect(spy).toHaveBeenCalledTimes(1);
-                expectSameOrder.call(this, [2, 1, 0]);
+                assert(spy.callCount === 1);
+                assertSameOrder.call(this, [2, 1, 0]);
             });
 
             it('can maintain a separate order', function() {
-                var spy = jasmine.createSpy();
-                var expectSorted = (calls) => {
-                    expect(spy).toHaveBeenCalledTimes(calls);
+                var spy = sinon.fake();
+                var assertSorted = (calls) => {
+                    assert(spy.callCount === calls);
                     // We are basically going to verify that, no matter how we
                     // juggle the underlying collection, the mapped collection
                     // will always maintain the order dictated by its
                     // `.comparator`.
-                    expectOrder(this.mapped, this.expected, expectedOrder);
+                    assertOrder(this.mapped, this.expected, expectedOrder);
                 }
                 this.mapped.on('sort', spy);
                 // Direct sort on the mapped collection.
                 _.extend(this.mapped, {comparator}).sort();
-                expectSorted(1);
+                assertSorted(1);
                 // Same juggling as in the "tracks additions and removals" spec.
                 this.underlying.remove(3);
                 this.underlying.add(butlers[2]);
-                expectSorted(2);
+                assertSorted(2);
                 // Same juggling as in the "tracks the underlying order" spec.
                 this.underlying.unshift(this.underlying.pop());
-                expectSorted(3);
+                assertSorted(3);
                 this.underlying.comparator = ({id}) => -id;
                 this.underlying.sort();
                 // A direct call to `.sort()` on the underlying collection will
                 // not even trigger a `'sort'` event, because no models are
                 // added. Therefore, still 3 calls on the spy's counter.
-                expectSorted(3);
+                assertSorted(3);
             });
 
             // As discussed in the `commonMapperConfigs`, the line below
@@ -283,25 +279,26 @@ describe('MappedCollection', function() {
                     var inputModel = this.underlying.at(index);
                     var originalOutput = this.mapped.at(index);
                     assert(originalOutput === this.mapped.getMapped(inputModel));
-                    var spy = jasmine.createSpy();
+                    var spy = sinon.fake();
                     originalOutput.on('change', spy);
                     // Modify the guinea pig model.
                     inputModel.set(patch);
                     // The original corresponding model should NOT be modified.
-                    expect(spy).not.toHaveBeenCalled();
-                    expect(originalOutput.toJSON())
-                    .toEqual(this.expected[index]);
+                    assert(spy.notCalled);
+                    assert.deepStrictEqual(
+                        originalOutput.toJSON(),
+                        this.expected[index]
+                    );
                     // Instead, it should be replaced by a new model at the same
                     // index.
-                    expect(this.mapped.has(originalOutput)).toBeFalsy();
+                    assert(!this.mapped.has(originalOutput));
                     var newOutput = this.mapped.at(index);
-                    expect(newOutput).not.toBe(originalOutput);
-                    expect(newOutput.toJSON())
-                    .toEqual(jasmine.objectContaining(checkAttributes));
+                    assert(newOutput !== originalOutput);
+                    sinon.assert.match(newOutput.toJSON(), checkAttributes);
                     // All of this magic must obviously happen without otherwise
                     // corrupting the correspondence.
                     assert(this.mapped.length === this.underlying.length);
-                    expectCorrespondence.call(this);
+                    assertCorrespondence.call(this);
                 });
             // Otherwise, i.e., when the mapper returns an attributes hash or
             // the same model that was already in the collection, we expect the
@@ -314,30 +311,31 @@ describe('MappedCollection', function() {
                     var inputModel = this.underlying.at(index);
                     var originalOutput = this.mapped.at(index);
                     assert(originalOutput === this.mapped.getMapped(inputModel));
-                    var spy = jasmine.createSpy();
+                    var spy = sinon.fake();
                     originalOutput.on('change', spy);
                     // So far, everything is still the same. Now, modify the
                     // guinea pig again.
                     inputModel.set(patch);
                     // Now the original corresponding model SHOULD be modified,
-                    expect(spy).toHaveBeenCalled();
-                    expect(originalOutput.toJSON())
-                    .not.toEqual(this.expected[index]);
+                    assert(spy.called);
+                    assert.notDeepStrictEqual(
+                        originalOutput.toJSON(),
+                        this.expected[index]
+                    );
                     // ... and it should still be in the collection at the same
                     // index, but we retrieve it again just in case this fails
                     // and we need further diagnostics.
-                    expect(this.mapped.has(originalOutput)).toBeTruthy();
+                    assert(this.mapped.has(originalOutput));
                     var newOutput = this.mapped.at(index);
                     assert(newOutput === originalOutput);
-                    expect(newOutput.toJSON())
-                    .toEqual(jasmine.objectContaining(checkAttributes));
+                    sinon.assert.match(newOutput.toJSON(), checkAttributes);
                     // Since the attributes are updated in place, we
                     // double-check that we are not accidentally leaking the
                     // internal correspondence administration.
-                    expect(newOutput.has('_ucid')).toBeFalsy();
+                    assert(!newOutput.has('_ucid'));
                     // Finally, double-check for any other possible corruption.
                     assert(this.mapped.length === this.underlying.length);
-                    expectCorrespondence.call(this);
+                    assertCorrespondence.call(this);
                 });
             }
         });
