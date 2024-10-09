@@ -4,7 +4,7 @@ import sinon from 'sinon';
 import _ from 'underscore';
 import { Collection } from 'backbone';
 
-import { deriveConstructor } from './inheritance.js';
+import { deriveConstructor, parent } from './inheritance.js';
 
 // In these tests, we will build a three-layer class hierarchy on top of
 // `Backbone.Collection`. We could have gone with any other class or even
@@ -204,5 +204,25 @@ function describeWithBase(Base) {
 describe('deriveConstructor', function() {
     _.each({old: OldBase, 'new': NewBase}, function(base, age) {
         describe('with ' + age + ' base', _.partial(describeWithBase, base));
+    });
+});
+
+// And then there are some tests for the `parent` function. We can reuse
+// `OldBase` for this purpose. We do not expect different behavior for
+// `NewBase`.
+describe('parent', function() {
+    it('retrieves the parent constructor of a constructor', function() {
+        assert(parent(OldBase) === Collection);
+    });
+
+    it('retrieves the parent prototype of an instance', function() {
+        var instance = new OldBase;
+        assert(parent(instance) === Collection.prototype);
+    });
+
+    it('retrieves the parent prototype of a plain object', function() {
+        var base = {};
+        var derived = _.create(base);
+        assert(parent(derived) === base);
     });
 });
