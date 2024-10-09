@@ -1,3 +1,6 @@
+import assert from 'assert';
+import sinon from 'sinon';
+
 import _ from 'underscore';
 import { Model, Collection } from 'backbone';
 
@@ -159,11 +162,9 @@ describe('MappedCollection', function() {
             }
 
             function assertCorrespondence() {
-                this.underlying.each((model, index) => {
-                    assert(
-                        this.mapped.at(index) === this.mapped.getMapped(model)
-                    );
-                });
+                this.underlying.each((model, index) => assert(
+                    this.mapped.at(index) === this.mapped.getMapped(model)
+                ));
             }
 
             // Now to business: the specs.
@@ -232,7 +233,7 @@ describe('MappedCollection', function() {
                     // will always maintain the order dictated by its
                     // `.comparator`.
                     assertOrder(this.mapped, this.expected, expectedOrder);
-                }
+                };
                 this.mapped.on('sort', spy);
                 // Direct sort on the mapped collection.
                 _.extend(this.mapped, {comparator}).sort();

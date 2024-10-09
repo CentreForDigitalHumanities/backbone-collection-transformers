@@ -1,7 +1,7 @@
 import _, {
-    defaults,
     extend,
     invert,
+    isFunction,
     iteratee,
     keys,
     map,
@@ -280,7 +280,7 @@ var MappedCollectionMixin = {
         if (isEmpty(model._ucid)) delete model._ucid;
         return super._removeReference(model, options);
     },
-});
+};
 
 /**
  * Derive a mapped collection class from a given base class.
