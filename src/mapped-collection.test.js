@@ -199,7 +199,9 @@ describe('MappedCollection', function() {
                 var oldCorresponding = this.mapped.getMapped(sacrifice);
                 this.underlying.remove(sacrifice);
                 assert(removeSpy.callCount === 1);
-                assert(removeSpy.calledWith(oldCorresponding, this.mapped, sinon.match.any));
+                assert(removeSpy.calledWith(
+                    oldCorresponding, this.mapped, sinon.match.any
+                ));
                 assert(addSpy.callCount === 0);
                 assert(!this.mapped.has(oldCorresponding));
                 assert(_.isUndefined(this.mapped.findWhere(this.expected[2])));
@@ -208,8 +210,12 @@ describe('MappedCollection', function() {
                 var newCorresponding = this.mapped.getMapped(successor);
                 assert(removeSpy.callCount === 1);
                 assert(addSpy.callCount === 1);
-                assert(addSpy.calledWith(newCorresponding, this.mapped, sinon.match.any));
-                assert(this.mapped.findWhere(this.expected[2]) === newCorresponding);
+                assert(addSpy.calledWith(
+                    newCorresponding, this.mapped, sinon.match.any
+                ));
+                assert(
+                    this.mapped.findWhere(this.expected[2]) === newCorresponding
+                );
             });
 
             it('tracks the underlying order by default', function() {
