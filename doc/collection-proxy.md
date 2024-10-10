@@ -1,8 +1,18 @@
-```javascript
+# `@uu-cdh/backbone-collection-transformers/src/collection-proxy.js`
+
+[view source](https://github.com/CentreForDigitalHumanities/backbone-collection-transformers/tree/main/src/collection-proxy.js)
+[package README](../README.md)
+
+This module provides a mixin that supplies the `underlying` accessor. This accessor makes it possible to directly retrieve the source collection from a transformed collection, no matter how many transformations are layered in between. Since each layer of transformation acts as a proxy to the lower layers, we generalize the concept of a transformed collection to a *proxy collection*. `CollectionProxy` is the mixin that turns any collection class into a proxy collection class.
+
+The following example code demonstrates how to apply the mixin. Note that the proxy class constructor needs to set `this._underlying` to the layer directly below itself; the `underlying` accessor then takes care of traversing any additional layers, if `this._underlying` happens to be a proxy as well.
+
+```typescript
 import { mixin } from '@uu-cdh/backbone-util';
 import { ProxyMixin } from '@uu-cdh/backbone-collection-transformers';
 import BaseCollection from '../anywhere';
 
+// The next line is only needed in TypeScript.
 interface ProxyCollection extends ProxyMixin {}
 class ProxyCollection extends BaseCollection {
     constructor/initialize/preinitialize() {
