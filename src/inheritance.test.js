@@ -225,4 +225,8 @@ describe('parent', function() {
         var derived = _.create(base);
         assert(parent(derived) === base);
     });
+
+    it('retrieves the prototype of a class prototype', function() {
+        assert(parent(OldBase.prototype) === Collection.prototype);
+    });
 });

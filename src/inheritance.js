@@ -75,6 +75,9 @@ export function parent(child) {
     // If `child` is a constructor, we are done; the constructor of `child`'s
     // prototype's prototype is what we need.
     if (child !== instance) return prototype.constructor;
+    // If `child` is the prototype of a constructor, then its prototype is what
+    // we need.
+    if (child.hasOwnProperty('constructor')) return prototype;
     // If `child` derived directly from another object through `Object.create`
     // or similar, we are also done; that base is what we need.
     if (!prototype.hasOwnProperty('constructor')) return prototype;
