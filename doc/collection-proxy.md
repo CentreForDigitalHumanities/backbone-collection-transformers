@@ -1,7 +1,7 @@
 ```javascript
-import mixin from '../core/mixin';
+import { mixin } from '@uu-cdh/backbone-util';
+import { ProxyMixin } from '@uu-cdh/backbone-collection-transformers';
 import BaseCollection from '../anywhere';
-import ProxyMixin from '../core/collection-proxy';
 
 interface ProxyCollection extends ProxyMixin {}
 class ProxyCollection extends BaseCollection {
