@@ -58,7 +58,8 @@ export function deriveConstructor(Base, prepare, initialize) {
 
 /**
  * Retrieve the parent constructor or prototype of a constructor, class instance
- * or plain object. This function can be used as a generic `super` emulator.
+ * or other object. This function can be used as a generic `super` emulator, but
+ * dynamically scoped.
  * @param {function|object} child - Function or object of which to retrieve the
  * parent.
  * @returns {function|object|null} If the `child` is a constructor, its parent
