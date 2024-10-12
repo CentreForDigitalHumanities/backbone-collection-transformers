@@ -1,6 +1,6 @@
 {
   "name": "@uu-cdh/backbone-collection-transformers",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Proxying, filtering and mapping for Backbone.Collection",
   "author": "UU Centre for Digital Humanities - Research Software Lab",
   "license": "BSD-3-Clause",
