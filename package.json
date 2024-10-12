@@ -26,7 +26,8 @@
     "collection",
     "filter",
     "map",
-    "proxy"
+    "proxy",
+    "transform"
   ],
   "dependencies": {
     "@uu-cdh/backbone-util": "github:CentreForDigitalHumanities/backbone-util#release/0.1.0",
