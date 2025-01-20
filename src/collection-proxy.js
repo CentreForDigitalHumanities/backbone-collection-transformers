@@ -13,7 +13,7 @@ export default Object.freeze(/** @lends CollectionProxy */{
      */
 
     /**
-     * Clients can this getter to transparently retrieve the innermost
+     * Clients can use this getter to transparently retrieve the innermost
      * underlying collection, even when there are multiple layers of proxies in
      * between.
      * @member {Backbone.Collection}
