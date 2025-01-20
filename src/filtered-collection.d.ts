@@ -8,12 +8,12 @@ type FilterCriterion<M extends Model> = Iteratee<Array<M>, boolean>;
 
 interface FilteredCollection<
     M extends Model = Model,
-    U extends Collection<M> = Collection<M>
+    U extends Collection<M> = Collection<M>,
     B extends Collection<M> = Collection<M>
 > extends ProxyMixin<M, U> {}
 declare class FilteredCollection<
     M extends Model = Model,
-    U extends Collection<M> = Collection<M>
+    U extends Collection<M> = Collection<M>,
     B extends Collection<M> = Collection<M>
 > extends B {
     criterion: FilterCriterion<M>;
