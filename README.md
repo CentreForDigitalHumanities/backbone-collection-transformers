@@ -87,9 +87,9 @@ joinedNameActors.toJSON();
 // ]
 
 // Both layers automatically change along with changes in the input.
-chinesActors.set({id: 2, familyName: 'Li'});
+chineseActors.set({id: 2, familyName: 'Li'});
 // joinedNameActors now also contains {id: 2, fullName: 'Li Lianjie'}
-chinesActors.remove(3);
+chineseActors.remove(3);
 // joinedNameActors no longer contains {id: 3, fullName: 'Ge You'}
 
 // Changes can be observed with the usual events.
