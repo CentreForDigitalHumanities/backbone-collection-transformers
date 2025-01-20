@@ -19,7 +19,7 @@ class ProxyCollection extends BaseCollection {
         this._underlying = // the direct underlying collection
     }
 }
-mixin(ProxyCollection.prototype, ProxyMixin.prototype);
+mixin(ProxyCollection.prototype, ProxyMixin);
 
 const aProxy = new ProxyCollection(...);
 // aProxy.underlying transparently traverses any intermediate proxies
