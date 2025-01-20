@@ -25,3 +25,5 @@ const aProxy = new ProxyCollection(...);
 // aProxy.underlying transparently traverses any intermediate proxies
 aProxy.underlying.add(...);
 ```
+
+`ProxyMixin` is written in such a generic way, that it could also be used for non-collection or even non-Backbone transformation hierarchies. Your imagination is the limit.
