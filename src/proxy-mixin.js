@@ -3,9 +3,9 @@
  * some underlying collection. This enables clients of such proxy classes to
  * transparently retrieve the underlying collection, even when there are
  * multiple layers of proxy collections in between.
- * @mixin CollectionProxy
+ * @mixin ProxyMixin
  */
-export default Object.freeze(/** @lends CollectionProxy */{
+export default Object.freeze(/** @lends ProxyMixin */{
     /**
      * Classes using this mixin should use this property internally to access
      * the direct underlying collection, which may or may not be a proxy itself.

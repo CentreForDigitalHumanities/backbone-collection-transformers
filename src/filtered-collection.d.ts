@@ -1,7 +1,7 @@
 import { Iteratee, ListIterator } from 'underscore';
 import { Model, Collection } from 'backbone';
 
-import CollectionProxy from './collection-proxy.js';
+import ProxyMixin from './proxy-mixin.js';
 
 export
 type FilterCriterion<M extends Model> = Iteratee<Array<M>, boolean>;
@@ -10,7 +10,7 @@ interface FilteredCollection<
     M extends Model = Model,
     U extends Collection<M> = Collection<M>
     B extends Collection<M> = Collection<M>
-> extends CollectionProxy<M, U> {}
+> extends ProxyMixin<M, U> {}
 declare class FilteredCollection<
     M extends Model = Model,
     U extends Collection<M> = Collection<M>

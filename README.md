@@ -12,7 +12,7 @@ One may sometimes want to take a custom collection class and then add the abilit
 
 Just like with the familiar `map` and `filter` functions, there are many situations where we may want to stack multiple transformations on top of each other. This is transparently supported. All mapped and filtered collections have an `underlying` property, which lets you directly access the source collection even under many layers of transformation.
 
-Mapping and filtering are just two of many conceivable transformations. If you need to implement a new collection transformer, you can tap into the same transparency by mixing our [`CollectionProxy`](doc/collection-proxy.md) into your transformer class.
+Mapping and filtering are just two of many conceivable transformations. If you need to implement a new collection transformer, you can tap into the same transparency by mixing our [`ProxyMixin`](doc/proxy-mixin.md) into your transformer class.
 
 [backbone]: https://backbonejs.org/
 [bb-collection]: https://backbonejs.org/#Collection
@@ -111,7 +111,7 @@ That being said, we tried our best to contain the damage. Only syntax and standa
 
 ## Reference
 
-- [collection-proxy](collection-proxy.md)
+- [proxy-mixin](proxy-mixin.md)
 - [filtered-collection](filtered-collection.md)
 - [mapped-collection](mapped-collection.md)
 

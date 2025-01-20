@@ -3,7 +3,7 @@ import assert from 'assert';
 import { Model, Collection } from 'backbone';
 import { mixin } from '@uu-cdh/backbone-util';
 
-import ProxyMixin from './collection-proxy.js';
+import ProxyMixin from './proxy-mixin.js';
 
 class IntermediateA extends Collection {
     constructor(underlying) {
