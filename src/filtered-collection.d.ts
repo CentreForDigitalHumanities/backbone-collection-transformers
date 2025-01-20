@@ -31,5 +31,5 @@ declare class FilteredCollection<
 export default function deriveFiltered<
     M extends Model = Model,
     U extends Collection<M> = Collection<M>,
-    B extends collection<M> = Collection<M>
+    B extends Collection<M> = Collection<M>
 >(base: typeof B = B): typeof FilteredCollection<M, U, B>;
