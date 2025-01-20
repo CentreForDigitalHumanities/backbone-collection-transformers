@@ -35,7 +35,10 @@ function wrapModelIteratee(conversion) {
 
 // The part of the constructor that runs before super().
 function ctorStart(underlying, conversion, options) {
-    options = extend({convert: wrapModelIteratee(conversion)}, options);
+    options = extend({
+        convert: wrapModelIteratee(conversion),
+        underlying,
+    }, options);
     return [underlying.models, options];
 }
 
