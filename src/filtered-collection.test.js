@@ -85,6 +85,7 @@ function testFiltered(FilteredCollection, isCustom) {
 
     it('keeps only matching models from the underlying collection', function() {
         filtered = new FilteredCollection(raw, m => m.has('x'));
+        assert(filtered.underlying === raw);
         assert(filtered.length === 3);
     });
 

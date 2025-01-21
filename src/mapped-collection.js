@@ -16,7 +16,7 @@ import { Model, Collection } from 'backbone';
 import { mixin } from '@uu-cdh/backbone-util';
 
 import { deriveConstructor, parent } from './inheritance.js';
-import CollectionProxy from './collection-proxy.js';
+import ProxyMixin from './proxy-mixin.js';
 
 // Underscore/Lodash compatibility.
 var mapObject = _.mapObject || _.mapValues;
@@ -35,7 +35,10 @@ function wrapModelIteratee(conversion) {
 
 // The part of the constructor that runs before super().
 function ctorStart(underlying, conversion, options) {
-    options = extend({convert: wrapModelIteratee(conversion)}, options);
+    options = extend({
+        convert: wrapModelIteratee(conversion),
+        underlying,
+    }, options);
     return [underlying.models, options];
 }
 
@@ -318,7 +321,7 @@ export default function deriveMapped(Base) {
      * overriding `.modelId()` in a subclass of `MappedCollection`.
      *
      * @class
-     * @mixes CollectionProxy
+     * @mixes ProxyMixin
      * @param {Collection} underlying - The input collection.
      * @param {String|Function} conversion - A function that takes a single model
      * from `underlying` as input, or a string naming an attribute of the
@@ -342,6 +345,6 @@ export default function deriveMapped(Base) {
 
     */
     var MappedCollection = deriveConstructor(Base, ctorStart, ctorEnd);
-    mixin(MappedCollection.prototype, MappedCollectionMixin, CollectionProxy);
+    mixin(MappedCollection.prototype, MappedCollectionMixin, ProxyMixin);
     return MappedCollection;
 }

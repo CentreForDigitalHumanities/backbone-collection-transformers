@@ -1,6 +1,6 @@
 import { Model, Collection }  from 'backbone';
 
-export interface CollectionProxy<
+export interface ProxyMixin<
     M extends Model = Model,
     C extends Collection<M> = Collection<M>
 > {
@@ -11,4 +11,5 @@ export interface CollectionProxy<
     readonly underlying: any;
 }
 
-export default const CollectionProxy: CollectionProxy;
+declare const ProxyMixin: ProxyMixin;
+export default ProxyMixin;

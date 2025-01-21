@@ -176,6 +176,10 @@ describe('MappedCollection', function() {
                 assertCorrespondence.call(this);
             });
 
+            it('keeps a reference to the underlying collection', function() {
+                assert(this.mapped.underlying === this.underlying);
+            });
+
             it('resets along with the underlying collection', function() {
                 var spy = sinon.fake();
                 this.mapped.on('reset', spy);

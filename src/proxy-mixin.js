@@ -3,19 +3,22 @@
  * some underlying collection. This enables clients of such proxy classes to
  * transparently retrieve the underlying collection, even when there are
  * multiple layers of proxy collections in between.
- * @mixin CollectionProxy
+ * The mechanism is not actually specific to collections and could also be used
+ * for non-collection and even non-Backbone data carriers.
+ * @mixin ProxyMixin
  */
-export default Object.freeze(/** @lends CollectionProxy */{
+export default Object.freeze(/** @lends ProxyMixin */{
     /**
      * Classes using this mixin should use this property internally to access
-     * the direct underlying collection, which may or may not be a proxy itself.
+     * the directly underlying collection or object, which may or may not be a
+     * proxy itself.
      * @member {Backbone.Collection} _underlying
      */
 
     /**
-     * Clients can this getter to transparently retrieve the innermost
-     * underlying collection, even when there are multiple layers of proxies in
-     * between.
+     * Clients can use this getter to transparently retrieve the innermost
+     * underlying collection or object, even when there are multiple layers of
+     * proxies in between.
      * @member {Backbone.Collection}
      */
     get underlying() {

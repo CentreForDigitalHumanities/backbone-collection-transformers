@@ -1,6 +1,6 @@
 import { Model, Collection, AddOptions as BAddOptions } from 'backbone';
 
-import ProxyMixin from './collection-proxy';
+import ProxyMixin from './proxy-mixin';
 
 type AnyFunction = (...args: any[]) => any;
 type IterateeParam = string | AnyFunction;

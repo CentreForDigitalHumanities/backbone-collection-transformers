@@ -3,7 +3,7 @@ import { Collection } from 'backbone';
 import { mixin } from '@uu-cdh/backbone-util';
 
 import { deriveConstructor } from './inheritance.js';
-import CollectionProxy from './collection-proxy.js';
+import ProxyMixin from './proxy-mixin.js';
 
 // The part of the constructor that runs before `super`.
 function ctorStart(underlying, criterion, options) {
@@ -129,7 +129,7 @@ export default function deriveFiltered(Base) {
      * operations should be performed on the underlying collection instead.
      *
      * @class
-     * @mixes CollectionProxy
+     * @mixes ProxyMixin
      * @param {Backbone.Collection} underlying - Collection to filter.
      * @param {*} criterion - Criterion to filter by. Can be anything that is
      * supported as an iteratee by `Backbone.Collection`, such as a function, an
@@ -149,6 +149,6 @@ export default function deriveFiltered(Base) {
 
      */
     var FilteredCollection = deriveConstructor(Base, ctorStart, ctorEnd);
-    mixin(FilteredCollection.prototype, FilteredCollectionMixin, CollectionProxy);
+    mixin(FilteredCollection.prototype, FilteredCollectionMixin, ProxyMixin);
     return FilteredCollection;
 }
