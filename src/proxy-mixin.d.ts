@@ -11,5 +11,5 @@ export interface ProxyMixin<
     readonly underlying: any;
 }
 
-declare const CollectionProxy: CollectionProxy;
-export default CollectionProxy;
+declare const ProxyMixin: ProxyMixin;
+export default ProxyMixin;
