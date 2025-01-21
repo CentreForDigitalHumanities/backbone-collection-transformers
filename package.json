@@ -1,0 +1,55 @@
+{
+  "name": "@uu-cdh/backbone-collection-transformers",
+  "version": "0.1.0",
+  "description": "Proxying, filtering and mapping for Backbone.Collection",
+  "author": "UU Centre for Digital Humanities - Research Software Lab",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/CentreForDigitalHumanities/backbone-collection-transformers/issues"
+  },
+  "homepage": "https://github.com/CentreForDigitalHumanities/backbone-collection-transformers#readme",
+  "main": "index.js",
+  "type": "module",
+  "files": [
+    "index.js",
+    "src/*"
+  ],
+  "scripts": {
+    "test": "karma start karma.conf.cjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CentreForDigitalHumanities/backbone-collection-transformers.git"
+  },
+  "keywords": [
+    "backbone",
+    "collection",
+    "filter",
+    "map",
+    "proxy",
+    "transform"
+  ],
+  "dependencies": {
+    "@uu-cdh/backbone-util": "^0.1.1",
+    "backbone": "^1.6.0",
+    "underscore": "^1.13.6"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.9",
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "babel-preset-power-assert": "^3.0.0",
+    "karma": "^6.4.2",
+    "karma-mocha": "^2.0.1",
+    "karma-power-assert": "^1.0.0",
+    "karma-rollup-preprocessor": "^7.0.8",
+    "mocha": "^10.3.0",
+    "power-assert": "^1.6.1",
+    "rollup": "^4.10.0",
+    "rollup-plugin-glob-import": "^0.5.0",
+    "rollup-plugin-node-polyfills": "^0.2.1",
+    "sinon": "^17.0.1"
+  }
+}
